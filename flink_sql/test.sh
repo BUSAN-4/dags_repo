@@ -1,1 +1,5 @@
- /c/Users/user/Desktop/git/bin/flink-1.19.3-bin-scala_2.12/flink-1.19.3/bin/sql-client.sh gateway -e localhost:8083 -f /c/Users/user/Desktop/git/flink_sql/test.sql
+# flink-sql-client 파드에서 수행
+# /opt/flink/dags_repo/flink_sql
+
+# SQL 제출 방법
+sql-client.sh gateway -e sql-gateway-service-119.flink.svc.cluster.local:8083 -f test.sql
