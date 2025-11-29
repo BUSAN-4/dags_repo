@@ -1,0 +1,1 @@
+ /c/Users/user/Desktop/git/bin/flink-1.19.3-bin-scala_2.12/flink-1.19.3/bin/sql-client.sh gateway -e localhost:8083 -f /c/Users/user/Desktop/git/flink_sql/test.sql
