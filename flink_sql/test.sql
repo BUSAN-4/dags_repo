@@ -14,8 +14,6 @@ USE CATALOG mariadb_catalog;
 SHOW DATABASES;
 USE car_db;
 SHOW TABLES;
-
-
 -- SET 'execution.runtime-mode'='batch';
 -- SET 'sql-client.execution.result-mode'='tableau';
 -- SET 'parallelism.default'='1';
