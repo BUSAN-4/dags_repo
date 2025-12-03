@@ -1,34 +1,32 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
-import pendulum
 
-# 한국 시간(KST) 기준 설정을 위해 타임존 지정
-local_tz = pendulum.timezone("Asia/Seoul")
-
-# ✅ 서비스 주소 (아까 확인한 것)
+# ✅ 서비스 주소 (환경에 맞게 수정되어 있음)
 FLINK_GATEWAY_URL = "http://sql-gateway-service-20.flink.svc.cluster.local:8083"
 
 def submit_flink_sql(**context):
-    # 실행된 시간(Execution Date)을 로그에 남겨서 스케줄링 확인
-    exec_date = context['execution_date']
+    # Airflow 3.0 대응: execution_date 대신 logical_date 사용
+    exec_date = context.get('logical_date')
     print(f"🚀 스케줄링 실행 시간(UTC): {exec_date}")
     print(f"Connecting to Flink Gateway at: {FLINK_GATEWAY_URL}")
     
-    # 세션 생성
+    # 1. 세션 생성
     session_url = f"{FLINK_GATEWAY_URL}/v1/sessions"
     headers = {"Content-Type": "application/json"}
-    resp = requests.post(session_url, json={"sessionName": "scheduler_test"}, headers=headers)
+    # 세션 이름에 실행 시간을 붙여서 구분하기 쉽게 함
+    session_name = f"scheduler_test_{exec_date}"
+    
+    resp = requests.post(session_url, json={"sessionName": session_name}, headers=headers)
     
     if resp.status_code != 200:
-        print(f"Session creation failed: {resp.text}")
-        return
+        raise Exception(f"Session creation failed: {resp.text}")
 
     session_handle = resp.json()['sessionHandle']
     print(f"✅ Session Created: {session_handle}")
 
-    # SQL 실행
+    # 2. SQL 실행
     sql = "SELECT 'Scheduler Test Success'"
     statement_url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}/statements"
     resp = requests.post(statement_url, json={"statement": sql}, headers=headers)
@@ -37,20 +35,18 @@ def submit_flink_sql(**context):
         op_handle = resp.json()['operationHandle']
         print(f"✅ SQL Submitted. Handle: {op_handle}")
     else:
-        print(f"SQL Submit Failed: {resp.text}")
+        raise Exception(f"SQL Submit Failed: {resp.text}")
 
 with DAG(
-    'flink_schedule_test_5min',
-    # ✅ 현재 시간보다 조금 과거로 start_date를 잡아야 바로 스케줄링이 시작됩니다.
-    start_date=datetime(2025, 12, 3, 19, 30, tzinfo=local_tz), 
-    # ✅ 5분마다 실행 (Cron 표현식: "*/5 * * * *")
-    # 또는 timedelta(minutes=5) 사용 가능
-    schedule="*/5 * * * *", 
-    catchup=False, # 과거 거는 실행 안 함
-    tags=['test', 'schedule'],
+    'flink_schedule_final_test',  # DAG ID
+    start_date=datetime(2023, 1, 1), # 과거 날짜 (필수)
+    schedule="*/5 * * * *",          # 5분마다 실행
+    catchup=False,                   # 밀린 작업 실행 안 함
+    tags=['test', 'flink', 'v3'],
 ) as dag:
 
     run_task = PythonOperator(
         task_id='run_every_5_min',
         python_callable=submit_flink_sql
+        # provide_context 삭제됨
     )
