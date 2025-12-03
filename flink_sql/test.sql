@@ -9,8 +9,6 @@ CREATE CATALOG mariadb_catalog WITH (
     'password' = 'busan!234pw',
     'base-url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306'
 );
-SHOW CATALOGS;
-USE CATALOG mariadb_catalog;
-SHOW DATABASES;
-USE car_db;
-SHOW TABLES;
+SELECT *
+FROM `mariadb_catalog`.car_db.car_plate_info
+LIMIT 10;
