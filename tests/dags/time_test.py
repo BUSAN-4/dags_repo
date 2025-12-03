@@ -52,6 +52,5 @@ with DAG(
 
     run_task = PythonOperator(
         task_id='run_every_5_min',
-        python_callable=submit_flink_sql,
-        provide_context=True
+        python_callable=submit_flink_sql
     )
