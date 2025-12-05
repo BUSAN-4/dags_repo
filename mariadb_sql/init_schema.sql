@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS `arrears_info` (
   `total_arrears_amount` int(11) DEFAULT NULL,
   `arrears_period` varchar(50) DEFAULT NULL,
   `notice_sent` tinyint(1) DEFAULT NULL,
+  `notice_count` tinyint(3) unsigned NOT NULL DEFAULT 0 COMMENT '고지서 받은 횟수',
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`car_plate_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='체납 차량 관리 대장';

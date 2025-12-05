@@ -19,18 +19,25 @@ logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 
 # Ngrok URL (팀원이 제공하는 주소로 업데이트 필요)
-NGROK_OCR_URL = "https://CHANGE_THIS.ngrok.io/ocr/batch"  # ⬅️ 팀원이 준 주소로 변경
+NGROK_OCR_URL = "https://sherilyn-acerb-wantonly.ngrok-free.dev/ocr/batch"  # ⬅️ 팀원이 준 주소로 변경
 
 # RDS 연결 정보
+# DB_CONFIG = {
+#     'host': 'busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com',
+#     'port': 23306,
+#     'user': 'root',
+#     'password': 'busan!234pw',
+#     'database': 'car_db',
+#     'charset': 'utf8mb4'
+# }
 DB_CONFIG = {
-    'host': 'busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com',
-    'port': 23306,
+    'host': '172.16.11.114',
+    'port': 3307,
     'user': 'root',
-    'password': 'busan!234pw',
-    'database': 'car_db',
+    'password': '0000',
+    'database': 'busan_car',
     'charset': 'utf8mb4'
 }
-
 
 @dag(
     dag_id='ocr_http_processing',

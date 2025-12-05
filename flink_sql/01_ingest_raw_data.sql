@@ -176,6 +176,7 @@ CREATE TABLE rds_arrears_info (
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
     notice_sent TINYINT,
+    notice_count INT,
     updated_at TIMESTAMP(3),
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
