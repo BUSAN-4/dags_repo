@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 
 # Ngrok URL (팀원이 제공하는 주소로 업데이트 필요)
-NGROK_OCR_URL = "https://sherilyn-acerb-wantonly.ngrok-free.dev/ocr/batch"  # ⬅️ 팀원이 준 주소로 변경
+NGROK_OCR_URL = "https://sherilyn-acerb-wantonly.ngrok-free.dev/ocr/batch"  
 
 # RDS 연결 정보
 # DB_CONFIG = {
@@ -74,7 +74,6 @@ def ocr_http_processing_dag():
             cursor = conn.cursor(pymysql.cursors.DictCursor)
             
             # 처리 안 된 이미지 가져오기 (한 번에 최대 50개)
-            # processed 컬럼이 없다면 제거하거나, 별도 처리 플래그 추가 필요
             query = """
                 SELECT 
                     image_id,
@@ -86,6 +85,7 @@ def ocr_http_processing_dag():
                 FROM vehicle_exterior_image
                 WHERE image_base64 IS NOT NULL
                 AND LENGTH(image_base64) > 0
+                AND processed = 0
                 ORDER BY captured_at DESC
                 LIMIT 10
             """
@@ -94,10 +94,10 @@ def ocr_http_processing_dag():
             images = cursor.fetchall()
             
             if not images:
-                logger.info("⏭️ 처리할 이미지가 없습니다.")
+                logger.info("⏭처리할 이미지가 없습니다.")
                 return
             
-            logger.info(f"📸 총 {len(images)}개 이미지를 처리합니다.")
+            logger.info(f"총 {len(images)}개 이미지를 처리합니다.")
             
             # 배열 형태로 payload 준비
             payload_list = []
@@ -140,36 +140,48 @@ def ocr_http_processing_dag():
                             if result.get('status') == 'success':
                                 plate_number = result.get('plate_number', '')
                                 confidence = result.get('confidence', 0.0)
-                                logger.info(f"✅ {image_id}: {plate_number} (신뢰도: {confidence:.2f})")
+                                logger.info(f"{image_id}: {plate_number} (신뢰도: {confidence:.2f})")
                                 
-                                # 필요시 별도 테이블에 저장
-                                # INSERT INTO ocr_results (image_id, plate_number, confidence, ...) VALUES (...)
+                                # DB에 OCR 결과 저장
+                                try:
+                                    update_query = """
+                                        UPDATE vehicle_exterior_image
+                                        SET processed = 1,
+                                            plate_number = %s,
+                                            confidence = %s,
+                                            updated_at = NOW()
+                                        WHERE image_id = %s
+                                    """
+                                    cursor.execute(update_query, (plate_number, confidence, image_id))
+                                    logger.info(f"DB 저장 완료: {image_id}")
+                                except Exception as db_error:
+                                    logger.error(f"DB 저장 실패 ({image_id}): {str(db_error)}")
                                 
                                 success_count += 1
                             else:
                                 logger.warning(f"⚠️ {image_id}: {result.get('message', 'OCR 실패')}")
                                 fail_count += 1
                     else:
-                        logger.error(f"❌ 예상치 못한 응답 형식: {type(results)}")
+                        logger.error(f"예상치 못한 응답 형식: {type(results)}")
                         fail_count = len(payload_list)
                 else:
-                    logger.error(f"❌ HTTP {response.status_code}: {response.text}")
+                    logger.error(f"HTTP {response.status_code}: {response.text}")
                     fail_count = len(payload_list)
                     
             except requests.exceptions.Timeout:
-                logger.error(f"⏱️ 타임아웃: {len(payload_list)}개 이미지 처리 실패")
+                logger.error(f"타임아웃: {len(payload_list)}개 이미지 처리 실패")
                 fail_count = len(payload_list)
             except Exception as e:
-                logger.error(f"❌ OCR API 호출 실패: {str(e)}")
+                logger.error(f"OCR API 호출 실패: {str(e)}")
                 fail_count = len(payload_list)
             
             # 결과 요약
-            logger.info(f"🎯 처리 완료: 성공 {success_count}, 실패 {fail_count}")
+            logger.info(f"처리 완료: 성공 {success_count}, 실패 {fail_count}")
             
             conn.commit()
             
         except Exception as e:
-            logger.error(f"❌ OCR 처리 중 오류: {str(e)}")
+            logger.error(f"OCR 처리 중 오류: {str(e)}")
             if conn:
                 conn.rollback()
             raise
