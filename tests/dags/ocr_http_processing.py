@@ -87,7 +87,7 @@ def ocr_http_processing_dag():
                 WHERE image_base64 IS NOT NULL
                 AND LENGTH(image_base64) > 0
                 ORDER BY captured_at DESC
-                LIMIT 50
+                LIMIT 10
             """
             
             cursor.execute(query)
@@ -126,7 +126,7 @@ def ocr_http_processing_dag():
                 response = requests.post(
                     NGROK_OCR_URL,
                     json=payload_list,  # 배열로 전송
-                    timeout=60  # 여러 이미지 처리 시간 고려
+                    timeout=600  # 여러 이미지 처리 시간 고려
                 )
                 
                 if response.status_code == 200:
