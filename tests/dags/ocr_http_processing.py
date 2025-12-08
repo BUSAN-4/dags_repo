@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 
 # Ngrok URL (팀원이 제공하는 주소로 업데이트 필요)
-NGROK_OCR_URL = "https://sherilyn-acerb-wantonly.ngrok-free.dev/ocr/batch"  
+NGROK_OCR_URL = "https://sherilyn-acerb-wantonly.ngrok-free.dev/ocr/batch"
 
 # RDS 연결 정보
 # DB_CONFIG = {
