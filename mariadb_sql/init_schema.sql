@@ -1,10 +1,10 @@
 -- ================================================
 -- MariaDB 초기화 스키마
--- 데이터베이스: car_db
+-- 데이터베이스: busan_car
 -- ================================================
 
-CREATE DATABASE IF NOT EXISTS car_db;
-USE car_db;
+CREATE DATABASE IF NOT EXISTS busan_car;
+USE busan_car;
 
 -- 1. 사용자-차량 정보 (uservehicle)
 CREATE TABLE IF NOT EXISTS `uservehicle` (
@@ -72,9 +72,9 @@ CREATE TABLE IF NOT EXISTS `driving_session_info` (
   `app_weather_status` varchar(255) DEFAULT NULL COMMENT '기상 상태',
   `app_precipitation` float DEFAULT NULL COMMENT '강수량',
   `dt` datetime DEFAULT NULL COMMENT '데이터등록시간',
-  `roadname` varchar(50) DEFAULT NULL,
-  `treveltime` double DEFAULT NULL,
-  `Hour` int(11) DEFAULT NULL,
+  `roadname` varchar(50) DEFAULT NULL COMMENT '도로명',
+  `treveltime` double DEFAULT NULL COMMENT '이동 소요 시간 (분)',
+  `Hour` int(11) DEFAULT NULL COMMENT '시간대 (0-23시)',
   PRIMARY KEY (`info_id`),
   KEY `session_id` (`session_id`),
   CONSTRAINT `driving_session_info_ibfk_1` FOREIGN KEY (`session_id`) REFERENCES `driving_session` (`session_id`)
@@ -82,13 +82,13 @@ CREATE TABLE IF NOT EXISTS `driving_session_info` (
 
 -- 4. 차량 외부 이미지 (vehicle_exterior_image)
 CREATE TABLE IF NOT EXISTS `vehicle_exterior_image` (
-  `image_id` varchar(64) NOT NULL,
-  `session_id` varchar(255) NOT NULL, -- session_id 타입 일치 (varchar(64) -> varchar(255))
-  `captured_lat` double DEFAULT NULL,
-  `captured_lon` double DEFAULT NULL,
-  `captured_at` datetime DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
+  `image_id` varchar(64) NOT NULL COMMENT '이미지 고유 ID',
+  `session_id` varchar(255) NOT NULL COMMENT '운행 세션 ID (FK)',
+  `captured_lat` double DEFAULT NULL COMMENT '촬영 위도',
+  `captured_lon` double DEFAULT NULL COMMENT '촬영 경도',
+  `captured_at` datetime DEFAULT NULL COMMENT '촬영 시간',
+  `created_at` datetime DEFAULT NULL COMMENT '데이터 생성일',
+  `updated_at` datetime DEFAULT NULL COMMENT '데이터 수정일',
   `image_base64` longtext DEFAULT NULL COMMENT 'Base64 인코딩 이미지 데이터',
   `processed` tinyint(1) DEFAULT 0 COMMENT 'OCR 처리 여부 (0: 미처리, 1: 처리완료)',
   `plate_number` varchar(20) DEFAULT NULL COMMENT 'OCR 인식 번호판',
@@ -100,18 +100,18 @@ CREATE TABLE IF NOT EXISTS `vehicle_exterior_image` (
 
 -- 5. 졸음 운전 감지 (drowsy_drive)
 CREATE TABLE IF NOT EXISTS `drowsy_drive` (
-  `drowsy_id` varchar(64) NOT NULL,
-  `session_id` varchar(255) NOT NULL, -- session_id 타입 일치
-  `detected_lat` double DEFAULT NULL,
-  `detected_lon` double DEFAULT NULL,
-  `detected_at` datetime DEFAULT NULL,
-  `duration_sec` int(11) DEFAULT NULL,
-  `gaze_closure` int(11) DEFAULT NULL,
-  `head_drop` int(11) DEFAULT NULL,
-  `yawn_flag` int(11) DEFAULT NULL,
-  `abnormal_flag` int(11) DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
+  `drowsy_id` varchar(64) NOT NULL COMMENT '졸음 탐지 고유 ID',
+  `session_id` varchar(255) NOT NULL COMMENT '운행 세션 ID (FK)',
+  `detected_lat` double DEFAULT NULL COMMENT '탐지 위도',
+  `detected_lon` double DEFAULT NULL COMMENT '탐지 경도',
+  `detected_at` datetime DEFAULT NULL COMMENT '탐지 시간',
+  `duration_sec` int(11) DEFAULT NULL COMMENT '졸음 지속 시간 (초)',
+  `gaze_closure` int(11) DEFAULT NULL COMMENT '눈 감김 횟수',
+  `head_drop` int(11) DEFAULT NULL COMMENT '고개 숙임 횟수',
+  `yawn_flag` int(11) DEFAULT NULL COMMENT '하품 감지 플래그',
+  `abnormal_flag` int(11) DEFAULT NULL COMMENT '이상 행동 플래그',
+  `created_at` datetime DEFAULT NULL COMMENT '데이터 생성일',
+  `updated_at` datetime DEFAULT NULL COMMENT '데이터 수정일',
   PRIMARY KEY (`drowsy_id`),
   KEY `idx_drowsy_session` (`session_id`,`detected_at`),
   CONSTRAINT `fk_drowsy_session` FOREIGN KEY (`session_id`) REFERENCES `driving_session` (`session_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -119,25 +119,25 @@ CREATE TABLE IF NOT EXISTS `drowsy_drive` (
 
 -- 6. 체납 차량 정보 (arrears_info)
 CREATE TABLE IF NOT EXISTS `arrears_info` (
-  `car_plate_number` varchar(20) NOT NULL,
-  `arrears_user_id` varchar(64) DEFAULT NULL,
-  `total_arrears_amount` int(11) DEFAULT NULL,
-  `arrears_period` varchar(50) DEFAULT NULL,
-  `notice_sent` tinyint(1) DEFAULT NULL,
+  `car_plate_number` varchar(20) NOT NULL COMMENT '차량 번호판',
+  `arrears_user_id` varchar(64) DEFAULT NULL COMMENT '체납자 ID',
+  `total_arrears_amount` int(11) DEFAULT NULL COMMENT '총 체납 금액',
+  `arrears_period` varchar(50) DEFAULT NULL COMMENT '체납 기간',
+  `notice_sent` tinyint(1) DEFAULT NULL COMMENT '고지서 발송 여부',
   `notice_count` tinyint(3) unsigned NOT NULL DEFAULT 0 COMMENT '고지서 받은 횟수',
-  `updated_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL COMMENT '수정일',
   PRIMARY KEY (`car_plate_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='체납 차량 관리 대장';
 
 -- 7. 체납 차량 감지 (arrears_detection)
 CREATE TABLE IF NOT EXISTS `arrears_detection` (
-  `detection_id` varchar(64) NOT NULL,
-  `image_id` varchar(64) NOT NULL,
-  `car_plate_number` varchar(20) NOT NULL,
-  `detection_success` tinyint(1) DEFAULT NULL,
-  `detected_lat` double DEFAULT NULL,
-  `detected_lon` double DEFAULT NULL,
-  `detected_time` datetime DEFAULT NULL,
+  `detection_id` varchar(64) NOT NULL COMMENT '탐지 결과 고유 ID',
+  `image_id` varchar(64) NOT NULL COMMENT '이미지 ID (FK)',
+  `car_plate_number` varchar(20) NOT NULL COMMENT '차량 번호판',
+  `detection_success` tinyint(1) DEFAULT NULL COMMENT '탐지 성공 여부 (0: 실패, 1: 성공)',
+  `detected_lat` double DEFAULT NULL COMMENT '탐지 위도',
+  `detected_lon` double DEFAULT NULL COMMENT '탐지 경도',
+  `detected_time` datetime DEFAULT NULL COMMENT '탐지 시간',
   PRIMARY KEY (`detection_id`),
   KEY `idx_arrears_image` (`image_id`,`detected_time`),
   KEY `idx_arrears_plate` (`car_plate_number`),
@@ -147,25 +147,25 @@ CREATE TABLE IF NOT EXISTS `arrears_detection` (
 
 -- 8. 실종자 정보 (missing_person_info)
 CREATE TABLE IF NOT EXISTS `missing_person_info` (
-  `missing_id` varchar(64) NOT NULL,
-  `missing_name` varchar(100) DEFAULT NULL,
-  `missing_age` int(11) DEFAULT NULL,
-  `missing_identity` varchar(255) DEFAULT NULL,
-  `registered_at` datetime DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
-  `missing_location` varchar(50) DEFAULT NULL,
+  `missing_id` varchar(64) NOT NULL COMMENT '실종자 고유 ID',
+  `missing_name` varchar(100) DEFAULT NULL COMMENT '실종자 이름',
+  `missing_age` int(11) DEFAULT NULL COMMENT '실종자 나이',
+  `missing_identity` varchar(255) DEFAULT NULL COMMENT '실종자 신원 정보',
+  `registered_at` datetime DEFAULT NULL COMMENT '등록일',
+  `updated_at` datetime DEFAULT NULL COMMENT '수정일',
+  `missing_location` varchar(50) DEFAULT NULL COMMENT '실종 장소',
   PRIMARY KEY (`missing_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='실종자 등록 정보';
 
 -- 9. 실종자 차량 감지 (missing_person_detection)
 CREATE TABLE IF NOT EXISTS `missing_person_detection` (
-  `detection_id` varchar(64) NOT NULL,
-  `image_id` varchar(64) NOT NULL,
-  `missing_id` varchar(64) NOT NULL,
-  `detection_success` tinyint(1) DEFAULT NULL,
-  `detected_lat` double DEFAULT NULL,
-  `detected_lon` double DEFAULT NULL,
-  `detected_time` datetime DEFAULT NULL,
+  `detection_id` varchar(64) NOT NULL COMMENT '탐지 결과 고유 ID',
+  `image_id` varchar(64) NOT NULL COMMENT '이미지 ID (FK)',
+  `missing_id` varchar(64) NOT NULL COMMENT '실종자 ID (FK)',
+  `detection_success` tinyint(1) DEFAULT NULL COMMENT '탐지 성공 여부 (0: 실패, 1: 성공)',
+  `detected_lat` double DEFAULT NULL COMMENT '탐지 위도',
+  `detected_lon` double DEFAULT NULL COMMENT '탐지 경도',
+  `detected_time` datetime DEFAULT NULL COMMENT '탐지 시간',
   PRIMARY KEY (`detection_id`),
   KEY `idx_mpd_image` (`image_id`,`detected_time`),
   KEY `idx_mpd_missing` (`missing_id`),

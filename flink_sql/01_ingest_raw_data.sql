@@ -31,7 +31,7 @@ CREATE TABLE rds_uservehicle (
     PRIMARY KEY (car_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'uservehicle',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -49,7 +49,7 @@ CREATE TABLE rds_driving_session (
     PRIMARY KEY (session_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'driving_session',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -98,35 +98,14 @@ CREATE TABLE rds_driving_session_info (
     PRIMARY KEY (info_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'driving_session_info',
     'username' = 'root',
     'password' = 'busan!234pw',
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 4. 차량 외부 이미지 (OCR용 - HTTP 방식으로 처리하므로 Kafka 제외)
--- RDS에서 읽기만 하고 Kafka로 전송하지 않음
-CREATE TABLE rds_vehicle_exterior_image (
-    image_id VARCHAR(64),
-    session_id VARCHAR(64),
-    captured_lat DOUBLE,
-    captured_lon DOUBLE,
-    captured_at TIMESTAMP(3),
-    created_at TIMESTAMP(3),
-    updated_at TIMESTAMP(3),
-    image_base64 STRING,
-    PRIMARY KEY (image_id) NOT ENFORCED
-) WITH (
-    'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
-    'table-name' = 'vehicle_exterior_image',
-    'username' = 'root',
-    'password' = 'busan!234pw',
-    'driver' = 'com.mysql.cj.jdbc.Driver'
-);
-
--- 5. 졸음 운전 감지
+-- 4. 졸음 운전 감지
 CREATE TABLE rds_drowsy_drive (
     drowsy_id VARCHAR(64),
     session_id VARCHAR(64),
@@ -143,14 +122,14 @@ CREATE TABLE rds_drowsy_drive (
     PRIMARY KEY (drowsy_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'drowsy_drive',
     'username' = 'root',
     'password' = 'busan!234pw',
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 6. 체납 차량 감지
+-- 5. 체납 차량 감지
 CREATE TABLE rds_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -162,33 +141,33 @@ CREATE TABLE rds_arrears_detection (
     PRIMARY KEY (detection_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'arrears_detection',
     'username' = 'root',
     'password' = 'busan!234pw',
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 7. 체납 차량 정보 (하루 단위 갱신 - Batch Job용)
+-- 6. 체납 차량 정보 (하루 단위 갱신 - Batch Job용)
 CREATE TABLE rds_arrears_info (
     car_plate_number VARCHAR(20),
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
     notice_sent TINYINT,
-    notice_count INT,
+    notice_count TINYINT,
     updated_at TIMESTAMP(3),
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'arrears_info',
     'username' = 'root',
     'password' = 'busan!234pw',
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 8. 실종자 차량 감지
+-- 7. 실종자 차량 감지
 CREATE TABLE rds_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -200,14 +179,14 @@ CREATE TABLE rds_missing_person_detection (
     PRIMARY KEY (detection_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'missing_person_detection',
     'username' = 'root',
     'password' = 'busan!234pw',
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 9. 실종자 정보 (하루 단위 갱신 - Batch Job용)
+-- 8. 실종자 정보 (하루 단위 갱신 - Batch Job용)
 CREATE TABLE rds_missing_person_info (
     missing_id VARCHAR(64),
     missing_name VARCHAR(100),
@@ -219,7 +198,7 @@ CREATE TABLE rds_missing_person_info (
     PRIMARY KEY (missing_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/car_db',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
     'table-name' = 'missing_person_info',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -391,9 +370,6 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 INSERT INTO kafka_driving_session_info 
 SELECT * FROM rds_driving_session_info 
 WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
-
--- 차량 외부 이미지는 Kafka로 전송하지 않음 (Airflow HTTP 방식)
--- INSERT INTO kafka_vehicle_exterior_image ... (주석 처리)
 
 -- 졸음 운전 감지
 INSERT INTO kafka_drowsy_drive 

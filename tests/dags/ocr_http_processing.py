@@ -142,20 +142,19 @@ def ocr_http_processing_dag():
                                 confidence = result.get('confidence', 0.0)
                                 logger.info(f"{image_id}: {plate_number} (신뢰도: {confidence:.2f})")
                                 
-                                # DB에 OCR 결과 저장
+                                # DB에 처리 완료 표시
                                 try:
                                     update_query = """
                                         UPDATE vehicle_exterior_image
                                         SET processed = 1,
-                                            plate_number = %s,
-                                            confidence = %s,
                                             updated_at = NOW()
                                         WHERE image_id = %s
                                     """
-                                    cursor.execute(update_query, (plate_number, confidence, image_id))
-                                    logger.info(f"DB 저장 완료: {image_id}")
+                                    cursor.execute(update_query, (image_id,))
+                                    logger.info(f"처리 완료 표시: {image_id}")
+                                    # OCR 결과는 arrears_detection 테이블에 별도 저장 (추후 구현)
                                 except Exception as db_error:
-                                    logger.error(f"DB 저장 실패 ({image_id}): {str(db_error)}")
+                                    logger.error(f"DB 업데이트 실패 ({image_id}): {str(db_error)}")
                                 
                                 success_count += 1
                             else:

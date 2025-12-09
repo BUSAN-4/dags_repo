@@ -10,50 +10,34 @@ logger = logging.getLogger(__name__)
 FLINK_GATEWAY_URL = "http://sql-gateway-service-20.flink.svc.cluster.local:8083"
 
 @dag(
-    dag_id='ingest_raw_data',
-    description='RDS에서 Kafka로 실시간 데이터 적재 (1분마다)',
-    schedule='*/1 * * * *',
+    dag_id='kafka_to_rds_streaming',
+    description='Kafka에서 RDS로 실시간 스트리밍 (24/7 실행)',
+    schedule=None,
     start_date=datetime(2025, 1, 1, tzinfo=KST),
     catchup=False,
-    tags=['flink', 'batch', 'rds-to-kafka'],
+    tags=['flink', 'streaming', 'kafka', 'rds'],
     default_args={
         'owner': 'airflow',
         'depends_on_past': False,
         'email_on_failure': False,
         'email_on_retry': False,
-        'retries': 2,
-        'retry_delay': timedelta(minutes=1),
+        'retries': 3,
+        'retry_delay': timedelta(minutes=5),
     }
 )
-def ingest_raw_data():
+def kafka_to_rds_streaming():
     
     @task
-    def calculate_time_range(**context):
-        """현재 실행 시간 기준으로 start_time, end_time 계산"""
-        execution_date = context.get('logical_date')
-        
-        # 1분 전부터 현재까지
-        start_time = (execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = execution_date.strftime('%Y-%m-%d %H:%M:%S')
-        
-        logger.info(f"시간 범위 설정: {start_time} ~ {end_time}")
-        return {'start_time': start_time, 'end_time': end_time}
-    
-    @task
-    def read_sql_file(time_range: dict):
-        """Flink SQL 파일 읽기 및 파라미터 주입"""
-        sql_file_path = "/opt/airflow/dags/repo/flink_sql/01_ingest_raw_data.sql"
+    def read_sql_file():
+        """Flink SQL 파일 읽기"""
+        sql_file_path = "/opt/airflow/dags/repo/flink_sql/03_kafka_to_rds_streaming.sql"
         
         try:
             with open(sql_file_path, 'r', encoding='utf-8') as f:
                 sql_content = f.read()
             
-            # 파라미터 주입
-            sql_content = sql_content.replace(':start_time', time_range['start_time'])
-            sql_content = sql_content.replace(':end_time', time_range['end_time'])
-            
             logger.info(f"SQL 파일 읽기 성공: {sql_file_path}")
-            logger.info(f"처리 시간: {time_range['start_time']} ~ {time_range['end_time']}")
+            logger.info(f"SQL 길이: {len(sql_content)} bytes")
             return sql_content
             
         except Exception as e:
@@ -78,11 +62,11 @@ def ingest_raw_data():
             raise
     
     @task
-    def submit_batch_job(session_handle: str, sql_content: str):
-        """Flink Batch Job 제출"""
+    def submit_streaming_job(session_handle: str, sql_content: str):
+        """Flink Streaming Job 제출 (24/7 실행)"""
         url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}/statements"
         
-        # SQL 구문 분리
+        # SQL 구문 분리 (SET, CREATE, BEGIN...END 분리)
         statements = []
         current_statement = ""
         in_statement_set = False
@@ -119,17 +103,29 @@ def ingest_raw_data():
             
             try:
                 logger.info(f"[{idx+1}/{len(statements)}] SQL 실행 중...")
+                logger.info(f"SQL: {statement[:100]}...")
                 
                 response = requests.post(
                     url, 
                     json={"statement": statement},
-                    timeout=120
+                    timeout=300
                 )
                 response.raise_for_status()
                 result = response.json()
                 
                 operation_handle = result.get('operationHandle')
                 logger.info(f"[{idx+1}/{len(statements)}] 실행 성공: {operation_handle}")
+                
+                # STATEMENT SET (스트리밍 잡) 실행 시
+                if 'BEGIN STATEMENT SET' in statement.upper():
+                    logger.info("실시간 스트리밍 Job 시작됨!")
+                    logger.info("Kafka -> RDS 실시간 전송 활성화")
+                    logger.info("이 Job은 수동으로 중지할 때까지 계속 실행됩니다")
+                    return {
+                        'status': 'streaming_started',
+                        'operation_handle': operation_handle,
+                        'message': 'Streaming job is running continuously'
+                    }
                 
             except Exception as e:
                 logger.error(f"[{idx+1}/{len(statements)}] 실행 실패: {str(e)}")
@@ -143,24 +139,25 @@ def ingest_raw_data():
     
     @task
     def close_session(session_handle: str):
-        """세션 종료"""
+        """세션 종료 (스트리밍 Job은 계속 실행됨)"""
         url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
         
         try:
             response = requests.delete(url, timeout=10)
             logger.info(f"세션 종료: {session_handle}")
+            logger.info("스트리밍 Job은 Flink Cluster에서 계속 실행 중입니다")
             
         except Exception as e:
             logger.warning(f"세션 종료 실패 (무시): {str(e)}")
     
     # Task 흐름
-    time_range = calculate_time_range()
-    sql_content = read_sql_file(time_range)
+    sql_content = read_sql_file()
     session_handle = create_session()
-    result = submit_batch_job(session_handle, sql_content)
+    result = submit_streaming_job(session_handle, sql_content)
     close_session(session_handle)
     
     return result
 
 # DAG 인스턴스 생성
-dag_instance = ingest_raw_data()
+dag_instance = kafka_to_rds_streaming()
+

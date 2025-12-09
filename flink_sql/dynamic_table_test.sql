@@ -11,7 +11,7 @@ CREATE TABLE driving_session(
     `update_at` TIMESTAMP(3)
 ) WITH (
     'connector' = 'jdbc',
-    'default-database' = 'car_db',
+    'default-database' = 'busan_car',
     'username' = 'root',
     'password' = 'busan!234pw',
     'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306'
