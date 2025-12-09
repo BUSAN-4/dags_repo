@@ -31,7 +31,7 @@ CREATE TABLE rds_uservehicle (
     PRIMARY KEY (car_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'uservehicle',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -49,7 +49,7 @@ CREATE TABLE rds_driving_session (
     PRIMARY KEY (session_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'driving_session',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -98,7 +98,7 @@ CREATE TABLE rds_driving_session_info (
     PRIMARY KEY (info_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'driving_session_info',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -122,7 +122,7 @@ CREATE TABLE rds_drowsy_drive (
     PRIMARY KEY (drowsy_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'drowsy_drive',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -141,7 +141,7 @@ CREATE TABLE rds_arrears_detection (
     PRIMARY KEY (detection_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'arrears_detection',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -160,7 +160,7 @@ CREATE TABLE rds_arrears_info (
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'arrears_info',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -179,7 +179,7 @@ CREATE TABLE rds_missing_person_detection (
     PRIMARY KEY (detection_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'missing_person_detection',
     'username' = 'root',
     'password' = 'busan!234pw',
@@ -198,7 +198,7 @@ CREATE TABLE rds_missing_person_info (
     PRIMARY KEY (missing_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'missing_person_info',
     'username' = 'root',
     'password' = 'busan!234pw',
