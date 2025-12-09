@@ -49,7 +49,7 @@ CREATE TABLE rds_uservehicle_target (
     PRIMARY KEY (car_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car',
+    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
     'table-name' = 'test_uservehicle_target',
     'username' = 'root',
     'password' = 'busan!234pw',
