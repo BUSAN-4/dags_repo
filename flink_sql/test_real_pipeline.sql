@@ -56,6 +56,8 @@ CREATE TABLE kafka_uservehicle_test (
     'connector' = 'kafka',
     'topic' = 'test_uservehicle_pipeline',
     'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
+    'properties.group.id' = 'test-pipeline-group',
+    'scan.startup.mode' = 'earliest-offset',
     'format' = 'json',
     'json.timestamp-format.standard' = 'ISO-8601'
 );
