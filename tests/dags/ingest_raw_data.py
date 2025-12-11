@@ -32,11 +32,14 @@ def ingest_raw_data():
         """현재 실행 시간 기준으로 start_time, end_time 계산"""
         execution_date = context.get('logical_date')
         
-        # 1분 전부터 현재까지
-        start_time = (execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = execution_date.strftime('%Y-%m-%d %H:%M:%S')
+        # UTC를 KST로 변환
+        execution_date_kst = execution_date.astimezone(KST)
         
-        logger.info(f"시간 범위 설정: {start_time} ~ {end_time}")
+        # 1분 전부터 현재까지
+        start_time = (execution_date_kst - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        end_time = execution_date_kst.strftime('%Y-%m-%d %H:%M:%S')
+        
+        logger.info(f"시간 범위 설정 (KST): {start_time} ~ {end_time}")
         return {'start_time': start_time, 'end_time': end_time}
     
     @task
