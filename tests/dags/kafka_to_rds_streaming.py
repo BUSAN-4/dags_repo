@@ -45,25 +45,21 @@ def kafka_to_rds_streaming():
             raise
     
     @task
-    def create_session():
-        """Flink SQL Gateway 세션 생성"""
-        url = f"{FLINK_GATEWAY_URL}/v1/sessions"
+    def submit_streaming_job(sql_content: str):
+        """Flink Streaming Job 제출 (24/7 실행) - 세션 생성부터 종료까지"""
+        # 1. 세션 생성
+        session_url = f"{FLINK_GATEWAY_URL}/v1/sessions"
         
         try:
-            response = requests.post(url, json={}, timeout=10)
-            response.raise_for_status()
-            session_handle = response.json()['sessionHandle']
-            
+            session_response = requests.post(session_url, json={}, timeout=10)
+            session_response.raise_for_status()
+            session_handle = session_response.json()['sessionHandle']
             logger.info(f"세션 생성 성공: {session_handle}")
-            return session_handle
-            
         except Exception as e:
             logger.error(f"세션 생성 실패: {str(e)}")
             raise
-    
-    @task
-    def submit_streaming_job(session_handle: str, sql_content: str):
-        """Flink Streaming Job 제출 (24/7 실행)"""
+        
+        # 2. SQL 실행
         url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}/statements"
         
         # SQL 구문 분리 (SET, CREATE, BEGIN...END 분리)
@@ -121,9 +117,20 @@ def kafka_to_rds_streaming():
                     logger.info("실시간 스트리밍 Job 시작됨!")
                     logger.info("Kafka -> RDS 실시간 전송 활성화")
                     logger.info("이 Job은 수동으로 중지할 때까지 계속 실행됩니다")
+                    
+                    # 3. 세션 종료 (스트리밍 Job은 계속 실행됨)
+                    close_url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
+                    try:
+                        requests.delete(close_url, timeout=10)
+                        logger.info(f"세션 종료 성공: {session_handle}")
+                        logger.info("스트리밍 Job은 Flink Cluster에서 계속 실행 중입니다")
+                    except Exception as e:
+                        logger.warning(f"세션 종료 실패 (무시): {str(e)}")
+                    
                     return {
                         'status': 'streaming_started',
                         'operation_handle': operation_handle,
+                        'session': session_handle,
                         'message': 'Streaming job is running continuously'
                     }
                 
@@ -135,26 +142,19 @@ def kafka_to_rds_streaming():
                 else:
                     raise
         
-        return {'status': 'completed', 'statements_executed': len(statements)}
-    
-    @task
-    def close_session(session_handle: str):
-        """세션 종료 (스트리밍 Job은 계속 실행됨)"""
-        url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
-        
+        # 4. 일반 종료 (스트리밍이 아닌 경우)
+        close_url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
         try:
-            response = requests.delete(url, timeout=10)
-            logger.info(f"세션 종료: {session_handle}")
-            logger.info("스트리밍 Job은 Flink Cluster에서 계속 실행 중입니다")
-            
+            requests.delete(close_url, timeout=10)
+            logger.info(f"세션 종료 성공: {session_handle}")
         except Exception as e:
             logger.warning(f"세션 종료 실패 (무시): {str(e)}")
+        
+        return {'status': 'completed', 'statements_executed': len(statements), 'session': session_handle}
     
     # Task 흐름
     sql_content = read_sql_file()
-    session_handle = create_session()
-    result = submit_streaming_job(session_handle, sql_content)
-    close_session(session_handle)
+    result = submit_streaming_job(sql_content)
     
     return result
 
