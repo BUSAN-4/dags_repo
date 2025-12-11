@@ -31,15 +31,16 @@ def ingest_raw_data():
     def calculate_time_range(**context):
         """현재 실행 시간 기준으로 start_time, end_time 계산"""
         execution_date = context.get('logical_date')
+        # DB 타임존(UTC) 기준으로 1분 전부터 현재까지 계산
+        start_time = (execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        end_time = execution_date.strftime('%Y-%m-%d %H:%M:%S')
         
-        # UTC를 KST로 변환
-        execution_date_kst = execution_date.astimezone(KST)
+        # 참고용 KST 변환 로그
+        start_time_kst = (execution_date.astimezone(KST) - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        end_time_kst = execution_date.astimezone(KST).strftime('%Y-%m-%d %H:%M:%S')
         
-        # 1분 전부터 현재까지
-        start_time = (execution_date_kst - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = execution_date_kst.strftime('%Y-%m-%d %H:%M:%S')
-        
-        logger.info(f"시간 범위 설정 (KST): {start_time} ~ {end_time}")
+        logger.info(f"시간 범위 설정 (UTC): {start_time} ~ {end_time}")
+        logger.info(f"시간 범위 설정 (KST 참고용): {start_time_kst} ~ {end_time_kst}")
         return {'start_time': start_time, 'end_time': end_time}
     
     @task
