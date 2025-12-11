@@ -120,7 +120,7 @@ def daily_info_update():
                 if idx < len(statements) - 1:
                     logger.warning("계속 진행...")
                     continue
-                else:
+        else:
                     raise
         
         return {'status': 'completed', 'statements_executed': len(statements)}

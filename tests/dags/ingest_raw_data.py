@@ -61,25 +61,21 @@ def ingest_raw_data():
             raise
     
     @task
-    def create_session():
-        """Flink SQL Gateway 세션 생성"""
-        url = f"{FLINK_GATEWAY_URL}/v1/sessions"
+    def submit_batch_job(sql_content: str):
+        """Flink Batch Job 제출 (세션 생성부터 종료까지)"""
+        # 1. 세션 생성
+        session_url = f"{FLINK_GATEWAY_URL}/v1/sessions"
         
         try:
-            response = requests.post(url, json={}, timeout=10)
-            response.raise_for_status()
-            session_handle = response.json()['sessionHandle']
-            
+            session_response = requests.post(session_url, json={}, timeout=10)
+            session_response.raise_for_status()
+            session_handle = session_response.json()['sessionHandle']
             logger.info(f"세션 생성 성공: {session_handle}")
-            return session_handle
-            
         except Exception as e:
             logger.error(f"세션 생성 실패: {str(e)}")
             raise
-    
-    @task
-    def submit_batch_job(session_handle: str, sql_content: str):
-        """Flink Batch Job 제출"""
+        
+        # 2. SQL 실행
         url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}/statements"
         
         # SQL 구문 분리
@@ -139,27 +135,21 @@ def ingest_raw_data():
                 else:
                     raise
         
-        return {'status': 'completed', 'statements_executed': len(statements)}
-    
-    @task
-    def close_session(session_handle: str):
-        """세션 종료"""
-        url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
-        
+        # 3. 세션 종료
+        close_url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
         try:
-            response = requests.delete(url, timeout=10)
-            logger.info(f"세션 종료: {session_handle}")
-            
+            requests.delete(close_url, timeout=10)
+            logger.info(f"세션 종료 성공: {session_handle}")
         except Exception as e:
             logger.warning(f"세션 종료 실패 (무시): {str(e)}")
+        
+        return {'status': 'completed', 'statements_executed': len(statements), 'session': session_handle}
     
     # Task 흐름
     time_range = calculate_time_range()
     sql_content = read_sql_file(time_range)
-    session_handle = create_session()
-    result = submit_batch_job(session_handle, sql_content)
-    close_session(session_handle)
-    
+    result = submit_batch_job(sql_content)
+
     return result
 
 # DAG 인스턴스 생성

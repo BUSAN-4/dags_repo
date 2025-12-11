@@ -161,3 +161,6 @@ def kafka_to_rds_streaming():
 # DAG 인스턴스 생성
 dag_instance = kafka_to_rds_streaming()
 
+
+
+
