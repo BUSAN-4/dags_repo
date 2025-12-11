@@ -29,15 +29,18 @@ def ingest_raw_data():
     
     @task
     def calculate_time_range(**context):
-        """현재 실행 시간 기준으로 start_time, end_time 계산 (UTC 기준)"""
+        """현재 실행 시간 기준으로 start_time, end_time 계산 (KST 기준)"""
         execution_date = context.get('logical_date')
         
-        # RDS가 UTC로 저장하므로 UTC 기준으로 1분 범위 계산
-        start_time = (execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = execution_date.strftime('%Y-%m-%d %H:%M:%S')
+        # Airflow logical_date(UTC)를 KST로 변환
+        execution_date_kst = execution_date.astimezone(KST)
         
-        logger.info(f"시간 범위 설정 (UTC): {start_time} ~ {end_time}")
-        logger.info(f"참고 (KST): {(execution_date - timedelta(minutes=1)).astimezone(KST).strftime('%Y-%m-%d %H:%M:%S')} ~ {execution_date.astimezone(KST).strftime('%Y-%m-%d %H:%M:%S')}")
+        # KST 기준으로 1분 범위 계산
+        start_time = (execution_date_kst - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        end_time = execution_date_kst.strftime('%Y-%m-%d %H:%M:%S')
+        
+        logger.info(f"시간 범위 설정 (KST): {start_time} ~ {end_time}")
+        logger.info(f"참고 (UTC): {(execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')} ~ {execution_date.strftime('%Y-%m-%d %H:%M:%S')}")
         return {'start_time': start_time, 'end_time': end_time}
     
     @task
