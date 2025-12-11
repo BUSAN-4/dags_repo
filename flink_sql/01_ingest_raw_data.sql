@@ -357,32 +357,32 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 -- ?�용??차량 ?�보
 INSERT INTO kafka_uservehicle 
 SELECT * FROM rds_uservehicle 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 -- ?�행 ?�션
 INSERT INTO kafka_driving_session 
 SELECT * FROM rds_driving_session 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 -- ?�행 ?�세 ?�보
 INSERT INTO kafka_driving_session_info 
 SELECT * FROM rds_driving_session_info 
-WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
+WHERE dt >= CAST(':start_time' AS TIMESTAMP) AND dt < CAST(':end_time' AS TIMESTAMP);
 
 -- 졸음 ?�전 감�?
 INSERT INTO kafka_drowsy_drive 
 SELECT * FROM rds_drowsy_drive 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 -- 체납 차량 감�?
 INSERT INTO kafka_arrears_detection 
 SELECT * FROM rds_arrears_detection 
-WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
+WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
 
 -- ?�종??차량 감�?
 INSERT INTO kafka_missing_person_detection 
 SELECT * FROM rds_missing_person_detection 
-WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
+WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
 
     'username' = 'root',
 
@@ -696,63 +696,54 @@ BEGIN STATEMENT SET;
 
 
 
--- ?�용??차량 ?�보
-
 INSERT INTO kafka_uservehicle 
 
 SELECT * FROM rds_uservehicle 
 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 
-
--- ?�행 ?�션
 
 INSERT INTO kafka_driving_session 
 
 SELECT * FROM rds_driving_session 
 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 
 
--- ?�행 ?�세 ?�보
 
 INSERT INTO kafka_driving_session_info 
 
 SELECT * FROM rds_driving_session_info 
 
-WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
+WHERE dt >= CAST(':start_time' AS TIMESTAMP) AND dt < CAST(':end_time' AS TIMESTAMP);
 
 
 
--- 졸음 ?�전 감�?
 
 INSERT INTO kafka_drowsy_drive 
 
 SELECT * FROM rds_drowsy_drive 
 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 
-
--- 체납 차량 감�?
 
 INSERT INTO kafka_arrears_detection 
 
 SELECT * FROM rds_arrears_detection 
 
-WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
+WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
 
 
 
--- ?�종??차량 감�?
 
 INSERT INTO kafka_missing_person_detection 
 
 SELECT * FROM rds_missing_person_detection 
 
-WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
+WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
 
 
 
