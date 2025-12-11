@@ -1,9 +1,9 @@
+﻿-- ================================================
+-- Flink SQL: RDS?�서 Kafka�??�이???�재 (Batch Mode)
 -- ================================================
--- Flink SQL: RDS?�서 Kafka�??�이???�재 (Batch Mode)
--- ================================================
--- ?�행 모드: Batch (Airflow ?��?줄링??
--- ?�도: RDS???�본 ?�이?��? ?�간 범위별로 Kafka???�재
--- Airflow ?�라미터: :start_time, :end_time
+-- ?�행 모드: Batch (Airflow ?��?줄링??
+-- ?�도: RDS???�본 ?�이?��? ?�간 범위별로 Kafka???�재
+-- Airflow ?�라미터: :start_time, :end_time
 -- ================================================
 
 SET 'execution.runtime-mode' = 'batch';
@@ -11,10 +11,10 @@ SET 'sql-client.execution.result-mode' = 'tableau';
 SET 'pipeline.name' = 'rds-to-kafka-ingest';
 
 -- ================================================
--- RDS ?�스 ?�이�??�의
+-- RDS ?�스 ?�이�??�의
 -- ================================================
 
--- 1. ?�용??차량 ?�보
+-- 1. ?�용??차량 ?�보
 CREATE TABLE IF NOT EXISTS rds_uservehicle (
     car_id VARCHAR(255),
     age INT,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS rds_uservehicle (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 2. ?�행 ?�션
+-- 2. ?�행 ?�션
 CREATE TABLE IF NOT EXISTS rds_driving_session (
     session_id VARCHAR(255),
     car_id VARCHAR(255),
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS rds_driving_session (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 3. ?�행 ?�세 ?�보
+-- 3. ?�행 ?�세 ?�보
 CREATE TABLE IF NOT EXISTS rds_driving_session_info (
     info_id VARCHAR(36),
     session_id VARCHAR(255),
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS rds_driving_session_info (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 4. 졸음 ?�전 감�?
+-- 4. 졸음 ?�전 감�?
 CREATE TABLE IF NOT EXISTS rds_drowsy_drive (
     drowsy_id VARCHAR(64),
     session_id VARCHAR(64),
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS rds_drowsy_drive (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 5. 체납 차량 감�?
+-- 5. 체납 차량 감�?
 CREATE TABLE IF NOT EXISTS rds_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS rds_arrears_detection (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 6. 체납 차량 ?�보 (?�루 ?�위 갱신 - Batch Job??
+-- 6. 체납 차량 ?�보 (?�루 ?�위 갱신 - Batch Job??
 CREATE TABLE IF NOT EXISTS rds_arrears_info (
     car_plate_number VARCHAR(20),
     arrears_user_id VARCHAR(64),
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS rds_arrears_info (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 7. ?�종??차량 감�?
+-- 7. ?�종??차량 감�?
 CREATE TABLE IF NOT EXISTS rds_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS rds_missing_person_detection (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 8. ?�종???�보 (?�루 ?�위 갱신 - Batch Job??
+-- 8. ?�종???�보 (?�루 ?�위 갱신 - Batch Job??
 CREATE TABLE IF NOT EXISTS rds_missing_person_info (
     missing_id VARCHAR(64),
     missing_name VARCHAR(100),
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS rds_missing_person_info (
 );
 
 -- ================================================
--- Kafka ?�크 ?�이�??�의
+-- Kafka ?�크 ?�이�??�의
 -- ================================================
 
 CREATE TABLE IF NOT EXISTS kafka_uservehicle (
@@ -291,7 +291,7 @@ CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
--- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
+-- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
 
 CREATE TABLE IF NOT EXISTS kafka_drowsy_drive (
     drowsy_id VARCHAR(64),
@@ -347,39 +347,39 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 );
 
 -- ================================================
--- ?�이???�재 (?�간 범위�??�터�?
+-- ?�이???�재 (?�간 범위�??�터�?
 -- ================================================
--- Airflow?�서 :start_time, :end_time ?�라미터 주입
+-- Airflow?�서 :start_time, :end_time ?�라미터 주입
 -- ?? :start_time = '2024-12-01 00:00:00'
 --     :end_time = '2024-12-01 00:01:00'
 -- ================================================
 
--- ?�용??차량 ?�보
+-- ?�용??차량 ?�보
 INSERT INTO kafka_uservehicle 
 SELECT * FROM rds_uservehicle 
 WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
 
--- ?�행 ?�션
+-- ?�행 ?�션
 INSERT INTO kafka_driving_session 
 SELECT * FROM rds_driving_session 
 WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
 
--- ?�행 ?�세 ?�보
+-- ?�행 ?�세 ?�보
 INSERT INTO kafka_driving_session_info 
 SELECT * FROM rds_driving_session_info 
 WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
 
--- 졸음 ?�전 감�?
+-- 졸음 ?�전 감�?
 INSERT INTO kafka_drowsy_drive 
 SELECT * FROM rds_drowsy_drive 
 WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
 
--- 체납 차량 감�?
+-- 체납 차량 감�?
 INSERT INTO kafka_arrears_detection 
 SELECT * FROM rds_arrears_detection 
 WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
 
--- ?�종??차량 감�?
+-- ?�종??차량 감�?
 INSERT INTO kafka_missing_person_detection 
 SELECT * FROM rds_missing_person_detection 
 WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
@@ -396,7 +396,7 @@ WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':e
 
 -- ================================================
 
--- Kafka ?�크 ?�이�??�의
+-- Kafka ?�크 ?�이�??�의
 
 -- ================================================
 
@@ -566,7 +566,7 @@ CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
 
 
 
--- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
+-- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
 
 
 
@@ -678,11 +678,11 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 
 -- ================================================
 
--- ?�이???�재 (?�간 범위�??�터�?
+-- ?�이???�재 (?�간 범위�??�터�?
 
 -- ================================================
 
--- Airflow?�서 :start_time, :end_time ?�라미터 주입
+-- Airflow?�서 :start_time, :end_time ?�라미터 주입
 
 -- ?? :start_time = '2024-12-01 00:00:00'
 
@@ -696,7 +696,7 @@ BEGIN STATEMENT SET;
 
 
 
--- ?�용??차량 ?�보
+-- ?�용??차량 ?�보
 
 INSERT INTO kafka_uservehicle 
 
@@ -706,7 +706,7 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 
 
 
--- ?�행 ?�션
+-- ?�행 ?�션
 
 INSERT INTO kafka_driving_session 
 
@@ -716,7 +716,7 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 
 
 
--- ?�행 ?�세 ?�보
+-- ?�행 ?�세 ?�보
 
 INSERT INTO kafka_driving_session_info 
 
@@ -726,7 +726,7 @@ WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
 
 
 
--- 졸음 ?�전 감�?
+-- 졸음 ?�전 감�?
 
 INSERT INTO kafka_drowsy_drive 
 
@@ -736,7 +736,7 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 
 
 
--- 체납 차량 감�?
+-- 체납 차량 감�?
 
 INSERT INTO kafka_arrears_detection 
 
@@ -746,7 +746,7 @@ WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':e
 
 
 
--- ?�종??차량 감�?
+-- ?�종??차량 감�?
 
 INSERT INTO kafka_missing_person_detection 
 
