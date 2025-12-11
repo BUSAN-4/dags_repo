@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS rds_driving_session_info (
     dt TIMESTAMP(3),
     roadname VARCHAR(50),
     treveltime DOUBLE,
-    Hour INT,
+    `Hour` INT,
     PRIMARY KEY (info_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
     dt TIMESTAMP(3),
     roadname VARCHAR(50),
     treveltime DOUBLE,
-    Hour INT
+    `Hour` INT
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'driving_session_info',
@@ -548,7 +548,7 @@ CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
 
     treveltime DOUBLE,
 
-    Hour INT
+    `Hour` INT
 
 ) WITH (
 
