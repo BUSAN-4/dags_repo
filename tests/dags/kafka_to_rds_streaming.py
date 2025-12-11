@@ -118,20 +118,16 @@ def kafka_to_rds_streaming():
                     logger.info("Kafka -> RDS 실시간 전송 활성화")
                     logger.info("이 Job은 수동으로 중지할 때까지 계속 실행됩니다")
                     
-                    # 3. 세션 종료 (스트리밍 Job은 계속 실행됨)
-                    close_url = f"{FLINK_GATEWAY_URL}/v1/sessions/{session_handle}"
-                    try:
-                        requests.delete(close_url, timeout=10)
-                        logger.info(f"세션 종료 성공: {session_handle}")
-                        logger.info("스트리밍 Job은 Flink Cluster에서 계속 실행 중입니다")
-                    except Exception as e:
-                        logger.warning(f"세션 종료 실패 (무시): {str(e)}")
+                    # 3. 세션은 닫지 않음! (세션을 닫으면 스트리밍 Job도 취소됨)
+                    logger.info(f"세션 유지 중: {session_handle}")
+                    logger.info("세션을 열어둬야 스트리밍 Job이 계속 실행됩니다")
+                    logger.info("Job을 중지하려면 Flink UI에서 수동으로 취소하세요")
                     
                     return {
                         'status': 'streaming_started',
                         'operation_handle': operation_handle,
                         'session': session_handle,
-                        'message': 'Streaming job is running continuously'
+                        'message': 'Streaming job is running - session kept alive'
                     }
                 
             except Exception as e:
