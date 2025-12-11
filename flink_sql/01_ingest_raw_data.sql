@@ -1,9 +1,9 @@
 -- ================================================
--- Flink SQL: RDS에서 Kafka로 데이터 적재 (Batch Mode)
+-- Flink SQL: RDS?�서 Kafka�??�이???�재 (Batch Mode)
 -- ================================================
--- 실행 모드: Batch (Airflow 스케줄링용)
--- 용도: RDS의 원본 데이터를 시간 범위별로 Kafka에 적재
--- Airflow 파라미터: :start_time, :end_time
+-- ?�행 모드: Batch (Airflow ?��?줄링??
+-- ?�도: RDS???�본 ?�이?��? ?�간 범위별로 Kafka???�재
+-- Airflow ?�라미터: :start_time, :end_time
 -- ================================================
 
 SET 'execution.runtime-mode' = 'batch';
@@ -11,11 +11,11 @@ SET 'sql-client.execution.result-mode' = 'tableau';
 SET 'pipeline.name' = 'rds-to-kafka-ingest';
 
 -- ================================================
--- RDS 소스 테이블 정의
+-- RDS ?�스 ?�이�??�의
 -- ================================================
 
--- 1. 사용자-차량 정보
-CREATE TABLE rds_uservehicle (
+-- 1. ?�용??차량 ?�보
+CREATE TABLE IF NOT EXISTS rds_uservehicle (
     car_id VARCHAR(255),
     age INT,
     user_sex VARCHAR(10),
@@ -38,8 +38,8 @@ CREATE TABLE rds_uservehicle (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 2. 운행 세션
-CREATE TABLE rds_driving_session (
+-- 2. ?�행 ?�션
+CREATE TABLE IF NOT EXISTS rds_driving_session (
     session_id VARCHAR(255),
     car_id VARCHAR(255),
     start_time TIMESTAMP(3),
@@ -56,8 +56,8 @@ CREATE TABLE rds_driving_session (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 3. 운행 상세 정보
-CREATE TABLE rds_driving_session_info (
+-- 3. ?�행 ?�세 ?�보
+CREATE TABLE IF NOT EXISTS rds_driving_session_info (
     info_id VARCHAR(36),
     session_id VARCHAR(255),
     app_lat DOUBLE,
@@ -105,8 +105,8 @@ CREATE TABLE rds_driving_session_info (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 4. 졸음 운전 감지
-CREATE TABLE rds_drowsy_drive (
+-- 4. 졸음 ?�전 감�?
+CREATE TABLE IF NOT EXISTS rds_drowsy_drive (
     drowsy_id VARCHAR(64),
     session_id VARCHAR(64),
     detected_lat DOUBLE,
@@ -129,8 +129,8 @@ CREATE TABLE rds_drowsy_drive (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 5. 체납 차량 감지
-CREATE TABLE rds_arrears_detection (
+-- 5. 체납 차량 감�?
+CREATE TABLE IF NOT EXISTS rds_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     car_plate_number VARCHAR(20),
@@ -148,8 +148,8 @@ CREATE TABLE rds_arrears_detection (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 6. 체납 차량 정보 (하루 단위 갱신 - Batch Job용)
-CREATE TABLE rds_arrears_info (
+-- 6. 체납 차량 ?�보 (?�루 ?�위 갱신 - Batch Job??
+CREATE TABLE IF NOT EXISTS rds_arrears_info (
     car_plate_number VARCHAR(20),
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
@@ -167,8 +167,8 @@ CREATE TABLE rds_arrears_info (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 7. 실종자 차량 감지
-CREATE TABLE rds_missing_person_detection (
+-- 7. ?�종??차량 감�?
+CREATE TABLE IF NOT EXISTS rds_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     missing_id VARCHAR(64),
@@ -186,8 +186,8 @@ CREATE TABLE rds_missing_person_detection (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 8. 실종자 정보 (하루 단위 갱신 - Batch Job용)
-CREATE TABLE rds_missing_person_info (
+-- 8. ?�종???�보 (?�루 ?�위 갱신 - Batch Job??
+CREATE TABLE IF NOT EXISTS rds_missing_person_info (
     missing_id VARCHAR(64),
     missing_name VARCHAR(100),
     missing_age INT,
@@ -206,10 +206,10 @@ CREATE TABLE rds_missing_person_info (
 );
 
 -- ================================================
--- Kafka 싱크 테이블 정의
+-- Kafka ?�크 ?�이�??�의
 -- ================================================
 
-CREATE TABLE kafka_uservehicle (
+CREATE TABLE IF NOT EXISTS kafka_uservehicle (
     car_id VARCHAR(255),
     age INT,
     user_sex VARCHAR(10),
@@ -230,7 +230,7 @@ CREATE TABLE kafka_uservehicle (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
-CREATE TABLE kafka_driving_session (
+CREATE TABLE IF NOT EXISTS kafka_driving_session (
     session_id VARCHAR(255),
     car_id VARCHAR(255),
     start_time TIMESTAMP(3),
@@ -245,7 +245,7 @@ CREATE TABLE kafka_driving_session (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
-CREATE TABLE kafka_driving_session_info (
+CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
     info_id VARCHAR(36),
     session_id VARCHAR(255),
     app_lat DOUBLE,
@@ -291,9 +291,9 @@ CREATE TABLE kafka_driving_session_info (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
--- OCR 이미지는 Kafka로 전송하지 않음 (HTTP API 방식 사용)
+-- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
 
-CREATE TABLE kafka_drowsy_drive (
+CREATE TABLE IF NOT EXISTS kafka_drowsy_drive (
     drowsy_id VARCHAR(64),
     session_id VARCHAR(64),
     detected_lat DOUBLE,
@@ -314,7 +314,7 @@ CREATE TABLE kafka_drowsy_drive (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
-CREATE TABLE kafka_arrears_detection (
+CREATE TABLE IF NOT EXISTS kafka_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     car_plate_number VARCHAR(20),
@@ -330,7 +330,7 @@ CREATE TABLE kafka_arrears_detection (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
-CREATE TABLE kafka_missing_person_detection (
+CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     missing_id VARCHAR(64),
@@ -347,39 +347,39 @@ CREATE TABLE kafka_missing_person_detection (
 );
 
 -- ================================================
--- 데이터 적재 (시간 범위별 필터링)
+-- ?�이???�재 (?�간 범위�??�터�?
 -- ================================================
--- Airflow에서 :start_time, :end_time 파라미터 주입
--- 예: :start_time = '2024-12-01 00:00:00'
+-- Airflow?�서 :start_time, :end_time ?�라미터 주입
+-- ?? :start_time = '2024-12-01 00:00:00'
 --     :end_time = '2024-12-01 00:01:00'
 -- ================================================
 
--- 사용자-차량 정보
+-- ?�용??차량 ?�보
 INSERT INTO kafka_uservehicle 
 SELECT * FROM rds_uservehicle 
 WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
 
--- 운행 세션
+-- ?�행 ?�션
 INSERT INTO kafka_driving_session 
 SELECT * FROM rds_driving_session 
 WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
 
--- 운행 상세 정보
+-- ?�행 ?�세 ?�보
 INSERT INTO kafka_driving_session_info 
 SELECT * FROM rds_driving_session_info 
 WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
 
--- 졸음 운전 감지
+-- 졸음 ?�전 감�?
 INSERT INTO kafka_drowsy_drive 
 SELECT * FROM rds_drowsy_drive 
 WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
 
--- 체납 차량 감지
+-- 체납 차량 감�?
 INSERT INTO kafka_arrears_detection 
 SELECT * FROM rds_arrears_detection 
 WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
 
--- 실종자 차량 감지
+-- ?�종??차량 감�?
 INSERT INTO kafka_missing_person_detection 
 SELECT * FROM rds_missing_person_detection 
 WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
@@ -396,13 +396,13 @@ WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':e
 
 -- ================================================
 
--- Kafka 싱크 테이블 정의
+-- Kafka ?�크 ?�이�??�의
 
 -- ================================================
 
 
 
-CREATE TABLE kafka_uservehicle (
+CREATE TABLE IF NOT EXISTS kafka_uservehicle (
 
     car_id VARCHAR(255),
 
@@ -444,7 +444,7 @@ CREATE TABLE kafka_uservehicle (
 
 
 
-CREATE TABLE kafka_driving_session (
+CREATE TABLE IF NOT EXISTS kafka_driving_session (
 
     session_id VARCHAR(255),
 
@@ -474,7 +474,7 @@ CREATE TABLE kafka_driving_session (
 
 
 
-CREATE TABLE kafka_driving_session_info (
+CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
 
     info_id VARCHAR(36),
 
@@ -566,11 +566,11 @@ CREATE TABLE kafka_driving_session_info (
 
 
 
--- OCR 이미지는 Kafka로 전송하지 않음 (HTTP API 방식 사용)
+-- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
 
 
 
-CREATE TABLE kafka_drowsy_drive (
+CREATE TABLE IF NOT EXISTS kafka_drowsy_drive (
 
     drowsy_id VARCHAR(64),
 
@@ -612,7 +612,7 @@ CREATE TABLE kafka_drowsy_drive (
 
 
 
-CREATE TABLE kafka_arrears_detection (
+CREATE TABLE IF NOT EXISTS kafka_arrears_detection (
 
     detection_id VARCHAR(64),
 
@@ -644,7 +644,7 @@ CREATE TABLE kafka_arrears_detection (
 
 
 
-CREATE TABLE kafka_missing_person_detection (
+CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 
     detection_id VARCHAR(64),
 
@@ -678,13 +678,13 @@ CREATE TABLE kafka_missing_person_detection (
 
 -- ================================================
 
--- 데이터 적재 (시간 범위별 필터링)
+-- ?�이???�재 (?�간 범위�??�터�?
 
 -- ================================================
 
--- Airflow에서 :start_time, :end_time 파라미터 주입
+-- Airflow?�서 :start_time, :end_time ?�라미터 주입
 
--- 예: :start_time = '2024-12-01 00:00:00'
+-- ?? :start_time = '2024-12-01 00:00:00'
 
 --     :end_time = '2024-12-01 00:01:00'
 
@@ -696,7 +696,7 @@ BEGIN STATEMENT SET;
 
 
 
--- 사용자-차량 정보
+-- ?�용??차량 ?�보
 
 INSERT INTO kafka_uservehicle 
 
@@ -706,7 +706,7 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 
 
 
--- 운행 세션
+-- ?�행 ?�션
 
 INSERT INTO kafka_driving_session 
 
@@ -716,7 +716,7 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 
 
 
--- 운행 상세 정보
+-- ?�행 ?�세 ?�보
 
 INSERT INTO kafka_driving_session_info 
 
@@ -726,7 +726,7 @@ WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
 
 
 
--- 졸음 운전 감지
+-- 졸음 ?�전 감�?
 
 INSERT INTO kafka_drowsy_drive 
 
@@ -736,7 +736,7 @@ WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_tim
 
 
 
--- 체납 차량 감지
+-- 체납 차량 감�?
 
 INSERT INTO kafka_arrears_detection 
 
@@ -746,7 +746,7 @@ WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':e
 
 
 
--- 실종자 차량 감지
+-- ?�종??차량 감�?
 
 INSERT INTO kafka_missing_person_detection 
 
