@@ -354,8 +354,6 @@ CREATE TABLE kafka_missing_person_detection (
 --     :end_time = '2024-12-01 00:01:00'
 -- ================================================
 
-BEGIN STATEMENT SET;
-
 -- 사용자-차량 정보
 INSERT INTO kafka_uservehicle 
 SELECT * FROM rds_uservehicle 
@@ -385,5 +383,3 @@ WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':e
 INSERT INTO kafka_missing_person_detection 
 SELECT * FROM rds_missing_person_detection 
 WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
-
-END;
