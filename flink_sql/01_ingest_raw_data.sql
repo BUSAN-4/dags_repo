@@ -1,20 +1,19 @@
 ﻿-- ================================================
--- Flink SQL: RDS?�서 Kafka�??�이???�재 (Batch Mode)
+-- Flink SQL: RDS에서 Kafka로 데이터 적재 (Batch Mode)
 -- ================================================
--- ?�행 모드: Batch (Airflow ?��?줄링??
--- ?�도: RDS???�본 ?�이?��? ?�간 범위별로 Kafka???�재
--- Airflow ?�라미터: :start_time, :end_time
+-- 실행 모드: Batch (Airflow 스케줄링)
+-- 용도: RDS의 원본 데이터를 시간 범위별로 Kafka에 적재
+-- Airflow 파라미터: :start_time, :end_time
 -- ================================================
 
 SET 'execution.runtime-mode' = 'batch';
 SET 'sql-client.execution.result-mode' = 'tableau';
-SET 'pipeline.name' = 'rds-to-kafka-ingest';
 
 -- ================================================
--- RDS ?�스 ?�이�??�의
+-- 1. RDS 소스 테이블 (JDBC)
 -- ================================================
 
--- 1. ?�용??차량 ?�보
+-- 1) 사용자 차량 정보
 CREATE TABLE IF NOT EXISTS rds_uservehicle (
     car_id VARCHAR(255),
     age INT,
@@ -38,13 +37,18 @@ CREATE TABLE IF NOT EXISTS rds_uservehicle (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 2. ?�행 ?�션
+-- 2) 운행 세션
 CREATE TABLE IF NOT EXISTS rds_driving_session (
     session_id VARCHAR(255),
     car_id VARCHAR(255),
     start_time TIMESTAMP(3),
     end_time TIMESTAMP(3),
-    created_at TIMESTAMP(3),
+    total_distance DOUBLE,
+    total_time INT,
+    avg_speed DOUBLE,
+    max_speed DOUBLE,
+    fuel_efficiency DOUBLE,
+    total_co2_emission DOUBLE,
     updated_at TIMESTAMP(3),
     PRIMARY KEY (session_id) NOT ENFORCED
 ) WITH (
@@ -56,41 +60,10 @@ CREATE TABLE IF NOT EXISTS rds_driving_session (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 3. ?�행 ?�세 ?�보
+-- 3) 운행 세션 정보
 CREATE TABLE IF NOT EXISTS rds_driving_session_info (
-    info_id VARCHAR(36),
+    info_id VARCHAR(255),
     session_id VARCHAR(255),
-    app_lat DOUBLE,
-    app_lon DOUBLE,
-    app_prev_lat DOUBLE,
-    app_prev_lon DOUBLE,
-    voltage TINYINT,
-    d_door TINYINT,
-    p_door TINYINT,
-    rd_door TINYINT,
-    rp_door TINYINT,
-    t_door TINYINT,
-    engine_status TINYINT,
-    r_engine_status TINYINT,
-    stt_alert TINYINT,
-    el_status TINYINT,
-    detect_shock TINYINT,
-    remain_remote TINYINT,
-    autodoor_use TINYINT,
-    silence_mode TINYINT,
-    low_voltage_alert TINYINT,
-    low_voltage_engine TINYINT,
-    temperature TINYINT,
-    app_travel TINYINT,
-    app_avg_speed FLOAT,
-    app_accel FLOAT,
-    app_gradient FLOAT,
-    app_rapid_acc INT,
-    app_rapid_deacc INT,
-    speed FLOAT,
-    createdDate TIMESTAMP(3),
-    app_weather_status VARCHAR(255),
-    app_precipitation FLOAT,
     dt TIMESTAMP(3),
     roadname VARCHAR(50),
     treveltime DOUBLE,
@@ -105,19 +78,19 @@ CREATE TABLE IF NOT EXISTS rds_driving_session_info (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 4. 졸음 ?�전 감�?
+-- 4) 졸음 운전 감지
 CREATE TABLE IF NOT EXISTS rds_drowsy_drive (
-    drowsy_id VARCHAR(64),
-    session_id VARCHAR(64),
-    detected_lat DOUBLE,
-    detected_lon DOUBLE,
-    detected_at TIMESTAMP(3),
-    duration_sec INT,
-    gaze_closure INT,
-    head_drop INT,
-    yawn_flag INT,
-    abnormal_flag INT,
-    created_at TIMESTAMP(3),
+    drowsy_id VARCHAR(255),
+    car_id VARCHAR(255),
+    session_id VARCHAR(255),
+    detected_time TIMESTAMP(3),
+    drowsiness_level VARCHAR(50),
+    eye_closure_rate DOUBLE,
+    head_position VARCHAR(50),
+    location_latitude DOUBLE,
+    location_longitude DOUBLE,
+    speed DOUBLE,
+    alert_triggered BOOLEAN,
     updated_at TIMESTAMP(3),
     PRIMARY KEY (drowsy_id) NOT ENFORCED
 ) WITH (
@@ -129,16 +102,16 @@ CREATE TABLE IF NOT EXISTS rds_drowsy_drive (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 5. 체납 차량 감�?
+-- 5) 미납 감지
 CREATE TABLE IF NOT EXISTS rds_arrears_detection (
-    detection_id VARCHAR(64),
-    image_id VARCHAR(64),
-    car_plate_number VARCHAR(20),
-    detection_success TINYINT,
-    detected_lat DOUBLE,
-    detected_lon DOUBLE,
+    arrears_id VARCHAR(255),
+    car_id VARCHAR(255),
     detected_time TIMESTAMP(3),
-    PRIMARY KEY (detection_id) NOT ENFORCED
+    location_latitude DOUBLE,
+    location_longitude DOUBLE,
+    notice_count TINYINT,
+    fine_amount_KRW INT,
+    PRIMARY KEY (arrears_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
     'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
@@ -148,35 +121,17 @@ CREATE TABLE IF NOT EXISTS rds_arrears_detection (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 6. 체납 차량 ?�보 (?�루 ?�위 갱신 - Batch Job??
-CREATE TABLE IF NOT EXISTS rds_arrears_info (
-    car_plate_number VARCHAR(20),
-    arrears_user_id VARCHAR(64),
-    total_arrears_amount INT,
-    arrears_period VARCHAR(50),
-    notice_sent TINYINT,
-    notice_count TINYINT,
-    updated_at TIMESTAMP(3),
-    PRIMARY KEY (car_plate_number) NOT ENFORCED
-) WITH (
-    'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
-    'table-name' = 'arrears_info',
-    'username' = 'root',
-    'password' = 'busan!234pw',
-    'driver' = 'com.mysql.cj.jdbc.Driver'
-);
-
--- 7. ?�종??차량 감�?
+-- 6) 실종자 감지
 CREATE TABLE IF NOT EXISTS rds_missing_person_detection (
-    detection_id VARCHAR(64),
-    image_id VARCHAR(64),
-    missing_id VARCHAR(64),
-    detection_success TINYINT,
-    detected_lat DOUBLE,
-    detected_lon DOUBLE,
+    missing_id VARCHAR(255),
+    car_id VARCHAR(255),
     detected_time TIMESTAMP(3),
-    PRIMARY KEY (detection_id) NOT ENFORCED
+    location_latitude DOUBLE,
+    location_longitude DOUBLE,
+    missing_person_id VARCHAR(255),
+    confidence_score DOUBLE,
+    image_url VARCHAR(500),
+    PRIMARY KEY (missing_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
     'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
@@ -186,159 +141,125 @@ CREATE TABLE IF NOT EXISTS rds_missing_person_detection (
     'driver' = 'com.mysql.cj.jdbc.Driver'
 );
 
--- 8. ?�종???�보 (?�루 ?�위 갱신 - Batch Job??
-CREATE TABLE IF NOT EXISTS rds_missing_person_info (
-    missing_id VARCHAR(64),
-    missing_name VARCHAR(100),
-    missing_age INT,
-    missing_identity VARCHAR(255),
-    registered_at TIMESTAMP(3),
+-- ================================================
+-- 2. Kafka 싱크 테이블
+-- ================================================
+
+-- 1) 사용자 차량 정보
+CREATE TABLE IF NOT EXISTS kafka_uservehicle (
+    car_id VARCHAR(255),
+    age INT,
+    user_sex VARCHAR(10),
+    user_location VARCHAR(255),
+    user_car_class VARCHAR(255),
+    user_car_brand VARCHAR(255),
+    user_car_year INT,
+    user_car_model VARCHAR(255),
+    user_car_weight INT,
+    user_car_displace INT,
+    user_car_efficiency VARCHAR(255),
     updated_at TIMESTAMP(3),
-    missing_location VARCHAR(50),
+    PRIMARY KEY (car_id) NOT ENFORCED
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'uservehicle',
+    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
+    'format' = 'json',
+    'json.timestamp-format.standard' = 'ISO-8601'
+);
+
+-- 2) 운행 세션
+CREATE TABLE IF NOT EXISTS kafka_driving_session (
+    session_id VARCHAR(255),
+    car_id VARCHAR(255),
+    start_time TIMESTAMP(3),
+    end_time TIMESTAMP(3),
+    total_distance DOUBLE,
+    total_time INT,
+    avg_speed DOUBLE,
+    max_speed DOUBLE,
+    fuel_efficiency DOUBLE,
+    total_co2_emission DOUBLE,
+    updated_at TIMESTAMP(3),
+    PRIMARY KEY (session_id) NOT ENFORCED
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'driving_session',
+    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
+    'format' = 'json',
+    'json.timestamp-format.standard' = 'ISO-8601'
+);
+
+-- 3) 운행 세션 정보
+CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
+    info_id VARCHAR(255),
+    session_id VARCHAR(255),
+    dt TIMESTAMP(3),
+    roadname VARCHAR(50),
+    treveltime DOUBLE,
+    `Hour` INT,
+    PRIMARY KEY (info_id) NOT ENFORCED
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'driving_session_info',
+    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
+    'format' = 'json',
+    'json.timestamp-format.standard' = 'ISO-8601'
+);
+
+-- 4) 졸음 운전 감지
+CREATE TABLE IF NOT EXISTS kafka_drowsy_drive (
+    drowsy_id VARCHAR(255),
+    car_id VARCHAR(255),
+    session_id VARCHAR(255),
+    detected_time TIMESTAMP(3),
+    drowsiness_level VARCHAR(50),
+    eye_closure_rate DOUBLE,
+    head_position VARCHAR(50),
+    location_latitude DOUBLE,
+    location_longitude DOUBLE,
+    speed DOUBLE,
+    alert_triggered BOOLEAN,
+    updated_at TIMESTAMP(3),
+    PRIMARY KEY (drowsy_id) NOT ENFORCED
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'drowsy_drive',
+    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
+    'format' = 'json',
+    'json.timestamp-format.standard' = 'ISO-8601'
+);
+
+-- 5) 미납 감지
+CREATE TABLE IF NOT EXISTS kafka_arrears_detection (
+    arrears_id VARCHAR(255),
+    car_id VARCHAR(255),
+    detected_time TIMESTAMP(3),
+    location_latitude DOUBLE,
+    location_longitude DOUBLE,
+    notice_count TINYINT,
+    fine_amount_KRW INT,
+    PRIMARY KEY (arrears_id) NOT ENFORCED
+) WITH (
+    'connector' = 'kafka',
+    'topic' = 'arrears_detection',
+    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
+    'format' = 'json',
+    'json.timestamp-format.standard' = 'ISO-8601'
+);
+
+-- 6) 실종자 감지
+CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
+    missing_id VARCHAR(255),
+    car_id VARCHAR(255),
+    detected_time TIMESTAMP(3),
+    location_latitude DOUBLE,
+    location_longitude DOUBLE,
+    missing_person_id VARCHAR(255),
+    confidence_score DOUBLE,
+    image_url VARCHAR(500),
     PRIMARY KEY (missing_id) NOT ENFORCED
 ) WITH (
-    'connector' = 'jdbc',
-    'url' = 'jdbc:mysql://busan-maria.cf8s8geeaqc9.ap-northeast-2.rds.amazonaws.com:23306/busan_car?characterEncoding=UTF-8&useUnicode=true&serverTimezone=UTC',
-    'table-name' = 'missing_person_info',
-    'username' = 'root',
-    'password' = 'busan!234pw',
-    'driver' = 'com.mysql.cj.jdbc.Driver'
-);
-
--- ================================================
--- Kafka ?�크 ?�이�??�의
--- ================================================
-
-CREATE TABLE IF NOT EXISTS kafka_uservehicle (
-    car_id VARCHAR(255),
-    age INT,
-    user_sex VARCHAR(10),
-    user_location VARCHAR(255),
-    user_car_class VARCHAR(255),
-    user_car_brand VARCHAR(255),
-    user_car_year INT,
-    user_car_model VARCHAR(255),
-    user_car_weight INT,
-    user_car_displace INT,
-    user_car_efficiency VARCHAR(255),
-    updated_at TIMESTAMP(3)
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'uservehicle',
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-    'format' = 'json',
-    'json.timestamp-format.standard' = 'ISO-8601'
-);
-
-CREATE TABLE IF NOT EXISTS kafka_driving_session (
-    session_id VARCHAR(255),
-    car_id VARCHAR(255),
-    start_time TIMESTAMP(3),
-    end_time TIMESTAMP(3),
-    created_at TIMESTAMP(3),
-    updated_at TIMESTAMP(3)
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'driving_session',
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-    'format' = 'json',
-    'json.timestamp-format.standard' = 'ISO-8601'
-);
-
-CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
-    info_id VARCHAR(36),
-    session_id VARCHAR(255),
-    app_lat DOUBLE,
-    app_lon DOUBLE,
-    app_prev_lat DOUBLE,
-    app_prev_lon DOUBLE,
-    voltage TINYINT,
-    d_door TINYINT,
-    p_door TINYINT,
-    rd_door TINYINT,
-    rp_door TINYINT,
-    t_door TINYINT,
-    engine_status TINYINT,
-    r_engine_status TINYINT,
-    stt_alert TINYINT,
-    el_status TINYINT,
-    detect_shock TINYINT,
-    remain_remote TINYINT,
-    autodoor_use TINYINT,
-    silence_mode TINYINT,
-    low_voltage_alert TINYINT,
-    low_voltage_engine TINYINT,
-    temperature TINYINT,
-    app_travel TINYINT,
-    app_avg_speed FLOAT,
-    app_accel FLOAT,
-    app_gradient FLOAT,
-    app_rapid_acc INT,
-    app_rapid_deacc INT,
-    speed FLOAT,
-    createdDate TIMESTAMP(3),
-    app_weather_status VARCHAR(255),
-    app_precipitation FLOAT,
-    dt TIMESTAMP(3),
-    roadname VARCHAR(50),
-    treveltime DOUBLE,
-    `Hour` INT
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'driving_session_info',
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-    'format' = 'json',
-    'json.timestamp-format.standard' = 'ISO-8601'
-);
-
--- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
-
-CREATE TABLE IF NOT EXISTS kafka_drowsy_drive (
-    drowsy_id VARCHAR(64),
-    session_id VARCHAR(64),
-    detected_lat DOUBLE,
-    detected_lon DOUBLE,
-    detected_at TIMESTAMP(3),
-    duration_sec INT,
-    gaze_closure INT,
-    head_drop INT,
-    yawn_flag INT,
-    abnormal_flag INT,
-    created_at TIMESTAMP(3),
-    updated_at TIMESTAMP(3)
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'drowsy_drive',
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-    'format' = 'json',
-    'json.timestamp-format.standard' = 'ISO-8601'
-);
-
-CREATE TABLE IF NOT EXISTS kafka_arrears_detection (
-    detection_id VARCHAR(64),
-    image_id VARCHAR(64),
-    car_plate_number VARCHAR(20),
-    detection_success TINYINT,
-    detected_lat DOUBLE,
-    detected_lon DOUBLE,
-    detected_time TIMESTAMP(3)
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'arrears_detection',
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-    'format' = 'json',
-    'json.timestamp-format.standard' = 'ISO-8601'
-);
-
-CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
-    detection_id VARCHAR(64),
-    image_id VARCHAR(64),
-    missing_id VARCHAR(64),
-    detection_success TINYINT,
-    detected_lat DOUBLE,
-    detected_lon DOUBLE,
-    detected_time TIMESTAMP(3)
-) WITH (
     'connector' = 'kafka',
     'topic' = 'missing_person_detection',
     'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
@@ -347,778 +268,39 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 );
 
 -- ================================================
--- ?�이???�재 (?�간 범위�??�터�?
+-- 3. 데이터 적재 (시간 범위 필터링)
 -- ================================================
--- Airflow?�서 :start_time, :end_time ?�라미터 주입
--- ?? :start_time = '2024-12-01 00:00:00'
---     :end_time = '2024-12-01 00:01:00'
--- ================================================
-
--- ?�용??차량 ?�보
-INSERT INTO kafka_uservehicle 
-SELECT * FROM rds_uservehicle 
-WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
-
--- ?�행 ?�션
-INSERT INTO kafka_driving_session 
-SELECT * FROM rds_driving_session 
-WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
-
--- ?�행 ?�세 ?�보
-INSERT INTO kafka_driving_session_info 
-SELECT * FROM rds_driving_session_info 
-WHERE dt >= CAST(':start_time' AS TIMESTAMP) AND dt < CAST(':end_time' AS TIMESTAMP);
-
--- 졸음 ?�전 감�?
-INSERT INTO kafka_drowsy_drive 
-SELECT * FROM rds_drowsy_drive 
-WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
-
--- 체납 차량 감�?
-INSERT INTO kafka_arrears_detection 
-SELECT * FROM rds_arrears_detection 
-WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
-
--- ?�종??차량 감�?
-INSERT INTO kafka_missing_person_detection 
-SELECT * FROM rds_missing_person_detection 
-WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
-
-    'username' = 'root',
-
-    'password' = 'busan!234pw',
-
-    'driver' = 'com.mysql.cj.jdbc.Driver'
-
-);
-
-
-
--- ================================================
-
--- Kafka ?�크 ?�이�??�의
-
--- ================================================
-
-
-
-CREATE TABLE IF NOT EXISTS kafka_uservehicle (
-
-    car_id VARCHAR(255),
-
-    age INT,
-
-    user_sex VARCHAR(10),
-
-    user_location VARCHAR(255),
-
-    user_car_class VARCHAR(255),
-
-    user_car_brand VARCHAR(255),
-
-    user_car_year INT,
-
-    user_car_model VARCHAR(255),
-
-    user_car_weight INT,
-
-    user_car_displace INT,
-
-    user_car_efficiency VARCHAR(255),
-
-    updated_at TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'uservehicle',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE IF NOT EXISTS kafka_driving_session (
-
-    session_id VARCHAR(255),
-
-    car_id VARCHAR(255),
-
-    start_time TIMESTAMP(3),
-
-    end_time TIMESTAMP(3),
-
-    created_at TIMESTAMP(3),
-
-    updated_at TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'driving_session',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE IF NOT EXISTS kafka_driving_session_info (
-
-    info_id VARCHAR(36),
-
-    session_id VARCHAR(255),
-
-    app_lat DOUBLE,
-
-    app_lon DOUBLE,
-
-    app_prev_lat DOUBLE,
-
-    app_prev_lon DOUBLE,
-
-    voltage TINYINT,
-
-    d_door TINYINT,
-
-    p_door TINYINT,
-
-    rd_door TINYINT,
-
-    rp_door TINYINT,
-
-    t_door TINYINT,
-
-    engine_status TINYINT,
-
-    r_engine_status TINYINT,
-
-    stt_alert TINYINT,
-
-    el_status TINYINT,
-
-    detect_shock TINYINT,
-
-    remain_remote TINYINT,
-
-    autodoor_use TINYINT,
-
-    silence_mode TINYINT,
-
-    low_voltage_alert TINYINT,
-
-    low_voltage_engine TINYINT,
-
-    temperature TINYINT,
-
-    app_travel TINYINT,
-
-    app_avg_speed FLOAT,
-
-    app_accel FLOAT,
-
-    app_gradient FLOAT,
-
-    app_rapid_acc INT,
-
-    app_rapid_deacc INT,
-
-    speed FLOAT,
-
-    createdDate TIMESTAMP(3),
-
-    app_weather_status VARCHAR(255),
-
-    app_precipitation FLOAT,
-
-    dt TIMESTAMP(3),
-
-    roadname VARCHAR(50),
-
-    treveltime DOUBLE,
-
-    `Hour` INT
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'driving_session_info',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
--- OCR ?��?지??Kafka�??�송?��? ?�음 (HTTP API 방식 ?�용)
-
-
-
-CREATE TABLE IF NOT EXISTS kafka_drowsy_drive (
-
-    drowsy_id VARCHAR(64),
-
-    session_id VARCHAR(64),
-
-    detected_lat DOUBLE,
-
-    detected_lon DOUBLE,
-
-    detected_at TIMESTAMP(3),
-
-    duration_sec INT,
-
-    gaze_closure INT,
-
-    head_drop INT,
-
-    yawn_flag INT,
-
-    abnormal_flag INT,
-
-    created_at TIMESTAMP(3),
-
-    updated_at TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'drowsy_drive',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE IF NOT EXISTS kafka_arrears_detection (
-
-    detection_id VARCHAR(64),
-
-    image_id VARCHAR(64),
-
-    car_plate_number VARCHAR(20),
-
-    detection_success TINYINT,
-
-    detected_lat DOUBLE,
-
-    detected_lon DOUBLE,
-
-    detected_time TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'arrears_detection',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
-
-    detection_id VARCHAR(64),
-
-    image_id VARCHAR(64),
-
-    missing_id VARCHAR(64),
-
-    detection_success TINYINT,
-
-    detected_lat DOUBLE,
-
-    detected_lon DOUBLE,
-
-    detected_time TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'missing_person_detection',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
--- ================================================
-
--- ?�이???�재 (?�간 범위�??�터�?
-
--- ================================================
-
--- Airflow?�서 :start_time, :end_time ?�라미터 주입
-
--- ?? :start_time = '2024-12-01 00:00:00'
-
---     :end_time = '2024-12-01 00:01:00'
-
--- ================================================
-
-
-
-BEGIN STATEMENT SET;
-
-
-
-INSERT INTO kafka_uservehicle 
-
-SELECT * FROM rds_uservehicle 
-
-WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
-
-
-
-INSERT INTO kafka_driving_session 
-
-SELECT * FROM rds_driving_session 
-
-WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
-
-
-
-
-INSERT INTO kafka_driving_session_info 
-
-SELECT * FROM rds_driving_session_info 
-
-WHERE dt >= CAST(':start_time' AS TIMESTAMP) AND dt < CAST(':end_time' AS TIMESTAMP);
-
-
-
-
-INSERT INTO kafka_drowsy_drive 
-
-SELECT * FROM rds_drowsy_drive 
-
-WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
-
-
-
-INSERT INTO kafka_arrears_detection 
-
-SELECT * FROM rds_arrears_detection 
-
-WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
-
-
-
-
-INSERT INTO kafka_missing_person_detection 
-
-SELECT * FROM rds_missing_person_detection 
-
-WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
-
-
-
-
-
-
-    'password' = 'busan!234pw',
-
-    'driver' = 'com.mysql.cj.jdbc.Driver'
-
-);
-
-
-
--- ================================================
-
--- Kafka 싱크 테이블 정의
-
--- ================================================
-
-
-
-CREATE TABLE kafka_uservehicle (
-
-    car_id VARCHAR(255),
-
-    age INT,
-
-    user_sex VARCHAR(10),
-
-    user_location VARCHAR(255),
-
-    user_car_class VARCHAR(255),
-
-    user_car_brand VARCHAR(255),
-
-    user_car_year INT,
-
-    user_car_model VARCHAR(255),
-
-    user_car_weight INT,
-
-    user_car_displace INT,
-
-    user_car_efficiency VARCHAR(255),
-
-    updated_at TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'uservehicle',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE kafka_driving_session (
-
-    session_id VARCHAR(255),
-
-    car_id VARCHAR(255),
-
-    start_time TIMESTAMP(3),
-
-    end_time TIMESTAMP(3),
-
-    created_at TIMESTAMP(3),
-
-    updated_at TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'driving_session',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE kafka_driving_session_info (
-
-    info_id VARCHAR(36),
-
-    session_id VARCHAR(255),
-
-    app_lat DOUBLE,
-
-    app_lon DOUBLE,
-
-    app_prev_lat DOUBLE,
-
-    app_prev_lon DOUBLE,
-
-    voltage TINYINT,
-
-    d_door TINYINT,
-
-    p_door TINYINT,
-
-    rd_door TINYINT,
-
-    rp_door TINYINT,
-
-    t_door TINYINT,
-
-    engine_status TINYINT,
-
-    r_engine_status TINYINT,
-
-    stt_alert TINYINT,
-
-    el_status TINYINT,
-
-    detect_shock TINYINT,
-
-    remain_remote TINYINT,
-
-    autodoor_use TINYINT,
-
-    silence_mode TINYINT,
-
-    low_voltage_alert TINYINT,
-
-    low_voltage_engine TINYINT,
-
-    temperature TINYINT,
-
-    app_travel TINYINT,
-
-    app_avg_speed FLOAT,
-
-    app_accel FLOAT,
-
-    app_gradient FLOAT,
-
-    app_rapid_acc INT,
-
-    app_rapid_deacc INT,
-
-    speed FLOAT,
-
-    createdDate TIMESTAMP(3),
-
-    app_weather_status VARCHAR(255),
-
-    app_precipitation FLOAT,
-
-    dt TIMESTAMP(3),
-
-    roadname VARCHAR(50),
-
-    treveltime DOUBLE,
-
-    Hour INT
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'driving_session_info',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
--- OCR 이미지는 Kafka로 전송하지 않음 (HTTP API 방식 사용)
-
-
-
-CREATE TABLE kafka_drowsy_drive (
-
-    drowsy_id VARCHAR(64),
-
-    session_id VARCHAR(64),
-
-    detected_lat DOUBLE,
-
-    detected_lon DOUBLE,
-
-    detected_at TIMESTAMP(3),
-
-    duration_sec INT,
-
-    gaze_closure INT,
-
-    head_drop INT,
-
-    yawn_flag INT,
-
-    abnormal_flag INT,
-
-    created_at TIMESTAMP(3),
-
-    updated_at TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'drowsy_drive',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE kafka_arrears_detection (
-
-    detection_id VARCHAR(64),
-
-    image_id VARCHAR(64),
-
-    car_plate_number VARCHAR(20),
-
-    detection_success TINYINT,
-
-    detected_lat DOUBLE,
-
-    detected_lon DOUBLE,
-
-    detected_time TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'arrears_detection',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
-CREATE TABLE kafka_missing_person_detection (
-
-    detection_id VARCHAR(64),
-
-    image_id VARCHAR(64),
-
-    missing_id VARCHAR(64),
-
-    detection_success TINYINT,
-
-    detected_lat DOUBLE,
-
-    detected_lon DOUBLE,
-
-    detected_time TIMESTAMP(3)
-
-) WITH (
-
-    'connector' = 'kafka',
-
-    'topic' = 'missing_person_detection',
-
-    'properties.bootstrap.servers' = 'kafka-cluster-kafka-bootstrap.kafka-kubernetes-operator.svc.cluster.local:9092',
-
-    'format' = 'json',
-
-    'json.timestamp-format.standard' = 'ISO-8601'
-
-);
-
-
-
--- ================================================
-
--- 데이터 적재 (시간 범위별 필터링)
-
--- ================================================
-
 -- Airflow에서 :start_time, :end_time 파라미터 주입
-
 -- 예: :start_time = '2024-12-01 00:00:00'
-
 --     :end_time = '2024-12-01 00:01:00'
-
 -- ================================================
 
-
-
-BEGIN STATEMENT SET;
-
-
-
--- 사용자-차량 정보
-
+-- 사용자 차량 정보
 INSERT INTO kafka_uservehicle 
-
 SELECT * FROM rds_uservehicle 
-
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
-
-
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
 -- 운행 세션
-
 INSERT INTO kafka_driving_session 
-
 SELECT * FROM rds_driving_session 
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
-
-
-
--- 운행 상세 정보
-
+-- 운행 세션 정보
 INSERT INTO kafka_driving_session_info 
-
 SELECT * FROM rds_driving_session_info 
-
-WHERE dt >= TIMESTAMP ':start_time' AND dt < TIMESTAMP ':end_time';
-
-
+WHERE dt >= CAST(':start_time' AS TIMESTAMP) AND dt < CAST(':end_time' AS TIMESTAMP);
 
 -- 졸음 운전 감지
-
 INSERT INTO kafka_drowsy_drive 
-
 SELECT * FROM rds_drowsy_drive 
+WHERE updated_at >= CAST(':start_time' AS TIMESTAMP) AND updated_at < CAST(':end_time' AS TIMESTAMP);
 
-WHERE updated_at >= TIMESTAMP ':start_time' AND updated_at < TIMESTAMP ':end_time';
-
-
-
--- 체납 차량 감지
-
+-- 미납 감지
 INSERT INTO kafka_arrears_detection 
-
 SELECT * FROM rds_arrears_detection 
+WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
 
-WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
-
-
-
--- 실종자 차량 감지
-
+-- 실종자 감지
 INSERT INTO kafka_missing_person_detection 
-
 SELECT * FROM rds_missing_person_detection 
-
-WHERE detected_time >= TIMESTAMP ':start_time' AND detected_time < TIMESTAMP ':end_time';
-
-
-
-
-
+WHERE detected_time >= CAST(':start_time' AS TIMESTAMP) AND detected_time < CAST(':end_time' AS TIMESTAMP);
