@@ -111,6 +111,10 @@ def resync_batch_limited():
             for idx, stmt in enumerate(statements, 1):
                 logger.info(f"[{idx}/{len(statements)}] SQL 실행 중...")
                 
+                # 디버깅: SQL 일부 출력
+                stmt_preview = stmt[:200] if len(stmt) > 200 else stmt
+                logger.info(f"SQL Preview: {stmt_preview}...")
+                
                 response = requests.post(url, json={"statement": stmt}, timeout=30)
                 response.raise_for_status()
                 
@@ -131,7 +135,17 @@ def resync_batch_limited():
                             logger.info(f"✅ [{idx}/{len(statements)}] 완료!")
                             break
                         elif status == 'ERROR':
-                            error_msg = status_response.json().get('error', 'Unknown error')
+                            # 상세 에러 정보 로그
+                            error_response = status_response.json()
+                            logger.error(f"❌ Flink SQL 에러 발생:")
+                            logger.error(f"Status Response: {error_response}")
+                            error_msg = error_response.get('error', {})
+                            if isinstance(error_msg, dict):
+                                logger.error(f"Error Message: {error_msg.get('message', 'No message')}")
+                                logger.error(f"Error Type: {error_msg.get('type', 'No type')}")
+                                logger.error(f"Stack Trace: {error_msg.get('stack', 'No stack')}")
+                            else:
+                                logger.error(f"Error: {error_msg}")
                             raise Exception(f"SQL 실행 실패: {error_msg}")
                         
                         time.sleep(2)
