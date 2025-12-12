@@ -51,9 +51,9 @@ def ingest_raw_data():
             with open(sql_file_path, 'r', encoding='utf-8-sig') as f:  # BOM 자동 제거
                 sql_content = f.read()
             
-            # 파라미터 주입 (작은따옴표 추가)
-            sql_content = sql_content.replace(':start_time', f"'{time_range['start_time']}'")
-            sql_content = sql_content.replace(':end_time', f"'{time_range['end_time']}'")
+            # 파라미터 주입 (SQL 파일에 이미 작은따옴표 있음)
+            sql_content = sql_content.replace(':start_time', time_range['start_time'])
+            sql_content = sql_content.replace(':end_time', time_range['end_time'])
             
             logger.info(f"SQL 파일 읽기 성공: {sql_file_path}")
             logger.info(f"처리 시간: {time_range['start_time']} ~ {time_range['end_time']}")
