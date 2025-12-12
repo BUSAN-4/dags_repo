@@ -29,17 +29,17 @@ def ingest_raw_data():
     
     @task
     def calculate_time_range(**context):
-        """현재 실행 시간 기준으로 start_time, end_time 계산 (UTC 기준)"""
+        """현재 실행 시간 기준으로 start_time, end_time 계산 (KST 기준)"""
         execution_date = context.get('logical_date')
         
-        # UTC 시간 그대로 사용 (serverTimezone=UTC와 일치)
-        start_time = (execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
-        end_time = execution_date.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # KST 참고용 로깅
+        # KST로 변환해서 사용 (serverTimezone=UTC와 함께 작동)
         execution_date_kst = execution_date.astimezone(KST)
-        logger.info(f"시간 범위 설정 (UTC): {start_time} ~ {end_time}")
-        logger.info(f"참고 (KST): {(execution_date_kst - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')} ~ {execution_date_kst.strftime('%Y-%m-%d %H:%M:%S')}")
+        start_time = (execution_date_kst - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        end_time = execution_date_kst.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # UTC 참고용 로깅
+        logger.info(f"시간 범위 설정 (KST): {start_time} ~ {end_time}")
+        logger.info(f"참고 (UTC): {(execution_date - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')} ~ {execution_date.strftime('%Y-%m-%d %H:%M:%S')}")
         return {'start_time': start_time, 'end_time': end_time}
     
     @task
