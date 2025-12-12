@@ -13,7 +13,7 @@ FLINK_GATEWAY_URL = "http://sql-gateway-service-20.flink.svc.cluster.local:8083"
     dag_id='resync_batch_limited',
     description='RDS 기존 데이터 5개씩 순차 전송 (1분마다)',
     schedule='*/1 * * * *',
-    start_date=datetime(2025, 1, 1, tzinfo=KST),
+    start_date=datetime(2025, 12, 12, tzinfo=KST),
     catchup=False,
     tags=['flink', 'batch', 'resync', 'limited'],
     default_args={
@@ -36,7 +36,7 @@ def resync_batch_limited():
         execution_date = context.get('logical_date')
         
         # 시작 시간부터 현재까지 몇 분 경과했는지 계산
-        start_date = datetime(2025, 1, 1, tzinfo=KST)
+        start_date = datetime(2025, 12, 12, tzinfo=KST)
         minutes_elapsed = int((execution_date - start_date).total_seconds() / 60)
         
         # offset = 분 경과 * 5
