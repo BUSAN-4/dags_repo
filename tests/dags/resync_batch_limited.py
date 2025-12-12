@@ -27,7 +27,7 @@ with DAG(
     'resync_batch_limited',
     default_args=default_args,
     description='기존 데이터 재동기화 (5개씩 배치)',
-    schedule=None,  # 수동 실행
+    schedule='*/1 * * * *',  # 매분 실행
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['flink', 'batch', 'resync', 'limited'],
