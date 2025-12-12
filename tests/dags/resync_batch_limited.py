@@ -111,6 +111,10 @@ def resync_batch_limited():
             for idx, stmt in enumerate(statements, 1):
                 logger.info(f"[{idx}/{len(statements)}] SQL 실행 중...")
                 
+                # 파라미터 치환 (순서 중요! offset_end를 먼저 치환)
+                stmt = stmt.replace(':offset_end', str(offset + 5))
+                stmt = stmt.replace(':offset', str(offset))
+                
                 # INSERT 구문은 전체 SQL 출력
                 if stmt.strip().upper().startswith('INSERT'):
                     logger.info(f"전체 SQL: {stmt}")
