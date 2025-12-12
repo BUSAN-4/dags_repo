@@ -132,7 +132,7 @@ CREATE TABLE kafka_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     car_plate_number VARCHAR(20),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3)
@@ -150,7 +150,7 @@ CREATE TABLE kafka_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     missing_id VARCHAR(64),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3)
@@ -169,8 +169,8 @@ CREATE TABLE kafka_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent TINYINT,
-    notice_count TINYINT,
+    notice_sent BOOLEAN,
+    notice_count BOOLEAN,
     updated_at TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
@@ -331,7 +331,7 @@ CREATE TABLE rds_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     car_plate_number VARCHAR(20),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3),
@@ -352,7 +352,7 @@ CREATE TABLE rds_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     missing_id VARCHAR(64),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3),
@@ -374,8 +374,8 @@ CREATE TABLE rds_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent TINYINT,
-    notice_count TINYINT,
+    notice_sent BOOLEAN,
+    notice_count BOOLEAN,
     updated_at TIMESTAMP(3),
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
