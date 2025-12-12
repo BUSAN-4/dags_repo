@@ -111,9 +111,12 @@ def resync_batch_limited():
             for idx, stmt in enumerate(statements, 1):
                 logger.info(f"[{idx}/{len(statements)}] SQL 실행 중...")
                 
-                # 디버깅: SQL 일부 출력
-                stmt_preview = stmt[:200] if len(stmt) > 200 else stmt
-                logger.info(f"SQL Preview: {stmt_preview}...")
+                # INSERT 구문은 전체 SQL 출력
+                if stmt.strip().upper().startswith('INSERT'):
+                    logger.info(f"전체 SQL: {stmt}")
+                else:
+                    stmt_preview = stmt[:200] if len(stmt) > 200 else stmt
+                    logger.info(f"SQL Preview: {stmt_preview}...")
                 
                 response = requests.post(url, json={"statement": stmt}, timeout=30)
                 response.raise_for_status()

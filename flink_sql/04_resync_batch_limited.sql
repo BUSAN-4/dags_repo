@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS rds_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     car_plate_number VARCHAR(20),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3),
@@ -123,9 +123,9 @@ CREATE TABLE IF NOT EXISTS rds_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent TINYINT,
+    notice_sent BOOLEAN,
     updated_at TIMESTAMP(3),
-    notice_count TINYINT,
+    notice_count BOOLEAN,
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS rds_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     missing_id VARCHAR(64),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3),
@@ -240,7 +240,7 @@ CREATE TABLE IF NOT EXISTS kafka_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     car_plate_number VARCHAR(20),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3)
@@ -258,9 +258,9 @@ CREATE TABLE IF NOT EXISTS kafka_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent TINYINT,
+    notice_sent BOOLEAN,
     updated_at TIMESTAMP(3),
-    notice_count TINYINT
+    notice_count BOOLEAN
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'arrears_info',
@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
     missing_id VARCHAR(64),
-    detection_success TINYINT,
+    detection_success BOOLEAN,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
     detected_time TIMESTAMP(3)
