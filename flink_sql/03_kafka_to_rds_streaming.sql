@@ -416,38 +416,14 @@ CREATE TABLE rds_missing_person_info (
 -- 각 Kafka 토픽의 메시지를 실시간으로 RDS에 저장
 -- ================================================
 
-BEGIN STATEMENT SET;
-
--- 사용자-차량 정보
-INSERT INTO rds_uservehicle 
-SELECT * FROM kafka_uservehicle;
-
--- 운행 세션
-INSERT INTO rds_driving_session 
-SELECT * FROM kafka_driving_session;
-
--- 운행 상세 정보
-INSERT INTO rds_driving_session_info 
-SELECT * FROM kafka_driving_session_info;
-
--- 졸음 운전 감지
-INSERT INTO rds_drowsy_drive 
-SELECT * FROM kafka_drowsy_drive;
-
--- 체납 차량 감지
-INSERT INTO rds_arrears_detection 
-SELECT * FROM kafka_arrears_detection;
-
--- 실종자 차량 감지
-INSERT INTO rds_missing_person_detection 
-SELECT * FROM kafka_missing_person_detection;
-
--- 체납 차량 정보
-INSERT INTO rds_arrears_info 
-SELECT * FROM kafka_arrears_info;
-
--- 실종자 정보
-INSERT INTO rds_missing_person_info 
-SELECT * FROM kafka_missing_person_info;
-
+EXECUTE STATEMENT SET
+BEGIN
+INSERT INTO rds_uservehicle SELECT * FROM kafka_uservehicle;
+INSERT INTO rds_driving_session SELECT * FROM kafka_driving_session;
+INSERT INTO rds_driving_session_info SELECT * FROM kafka_driving_session_info;
+INSERT INTO rds_drowsy_drive SELECT * FROM kafka_drowsy_drive;
+INSERT INTO rds_arrears_detection SELECT * FROM kafka_arrears_detection;
+INSERT INTO rds_missing_person_detection SELECT * FROM kafka_missing_person_detection;
+INSERT INTO rds_arrears_info SELECT * FROM kafka_arrears_info;
+INSERT INTO rds_missing_person_info SELECT * FROM kafka_missing_person_info;
 END;
