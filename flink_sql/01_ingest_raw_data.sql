@@ -296,34 +296,34 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 -- 사용자 차량 정보
 INSERT INTO kafka_uservehicle 
 SELECT * FROM rds_uservehicle 
-WHERE updated_at >= ':start_time' AND updated_at < ':end_time';
+WHERE updated_at >= CAST(:start_time AS TIMESTAMP) AND updated_at < CAST(:end_time AS TIMESTAMP);
 
 -- 운행 세션
 INSERT INTO kafka_driving_session 
 SELECT * FROM rds_driving_session 
-WHERE updated_at >= ':start_time' AND updated_at < ':end_time';
+WHERE updated_at >= CAST(:start_time AS TIMESTAMP) AND updated_at < CAST(:end_time AS TIMESTAMP);
 
 -- 운행 세션 정보
 INSERT INTO kafka_driving_session_info 
 SELECT * FROM rds_driving_session_info 
-WHERE dt >= ':start_time' AND dt < ':end_time';
+WHERE dt >= CAST(:start_time AS TIMESTAMP) AND dt < CAST(:end_time AS TIMESTAMP);
 
 -- 졸음 운전 감지
 INSERT INTO kafka_drowsy_drive 
 SELECT * FROM rds_drowsy_drive 
-WHERE updated_at >= ':start_time' AND updated_at < ':end_time';
+WHERE updated_at >= CAST(:start_time AS TIMESTAMP) AND updated_at < CAST(:end_time AS TIMESTAMP);
 
 -- 체납 차량 탐지
 INSERT INTO kafka_arrears_detection 
 SELECT * FROM rds_arrears_detection 
-WHERE detected_time >= ':start_time' AND detected_time < ':end_time';
+WHERE detected_time >= CAST(:start_time AS TIMESTAMP) AND detected_time < CAST(:end_time AS TIMESTAMP);
 
 -- 체납 차량 정보
 INSERT INTO kafka_arrears_info 
 SELECT * FROM rds_arrears_info 
-WHERE updated_at >= ':start_time' AND updated_at < ':end_time';
+WHERE updated_at >= CAST(:start_time AS TIMESTAMP) AND updated_at < CAST(:end_time AS TIMESTAMP);
 
 -- 실종자 탐지
 INSERT INTO kafka_missing_person_detection 
 SELECT * FROM rds_missing_person_detection 
-WHERE detected_time >= ':start_time' AND detected_time < ':end_time';
+WHERE detected_time >= CAST(:start_time AS TIMESTAMP) AND detected_time < CAST(:end_time AS TIMESTAMP);
