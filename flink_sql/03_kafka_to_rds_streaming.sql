@@ -374,8 +374,8 @@ CREATE TABLE rds_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent BOOLEAN,
-    notice_count BOOLEAN,
+    notice_sent TINYINT,
+    notice_count TINYINT,
     updated_at TIMESTAMP(3),
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
@@ -424,6 +424,15 @@ INSERT INTO rds_driving_session_info SELECT * FROM kafka_driving_session_info;
 INSERT INTO rds_drowsy_drive SELECT * FROM kafka_drowsy_drive;
 INSERT INTO rds_arrears_detection SELECT * FROM kafka_arrears_detection;
 INSERT INTO rds_missing_person_detection SELECT * FROM kafka_missing_person_detection;
-INSERT INTO rds_arrears_info SELECT * FROM kafka_arrears_info;
+INSERT INTO rds_arrears_info
+SELECT
+    car_plate_number,
+    arrears_user_id,
+    total_arrears_amount,
+    arrears_period,
+    CAST(notice_sent AS TINYINT),
+    CAST(notice_count AS TINYINT),
+    updated_at
+FROM kafka_arrears_info;
 INSERT INTO rds_missing_person_info SELECT * FROM kafka_missing_person_info;
 END;

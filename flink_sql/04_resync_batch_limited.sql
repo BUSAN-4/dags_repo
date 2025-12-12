@@ -123,9 +123,9 @@ CREATE TABLE IF NOT EXISTS rds_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent BOOLEAN,
+    notice_sent TINYINT,
     updated_at TIMESTAMP(3),
-    notice_count BOOLEAN,
+    notice_count TINYINT,
     PRIMARY KEY (car_plate_number) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
@@ -335,7 +335,14 @@ FROM (
 
 -- 체납 차량 정보
 INSERT INTO kafka_arrears_info 
-SELECT car_plate_number, arrears_user_id, total_arrears_amount, arrears_period, notice_sent, updated_at, notice_count
+SELECT 
+    car_plate_number, 
+    arrears_user_id, 
+    total_arrears_amount, 
+    arrears_period, 
+    CAST(notice_sent AS BOOLEAN), 
+    updated_at, 
+    CAST(notice_count AS BOOLEAN)
 FROM (
     SELECT *, ROW_NUMBER() OVER (ORDER BY car_plate_number) as rn
     FROM rds_arrears_info
