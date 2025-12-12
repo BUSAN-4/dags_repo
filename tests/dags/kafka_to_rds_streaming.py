@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import requests
 import logging
 import pytz
+import time
 
 KST = pytz.timezone('Asia/Seoul')
 logger = logging.getLogger(__name__)
@@ -119,20 +120,29 @@ def kafka_to_rds_streaming():
                 
                 # STATEMENT SET (스트리밍 잡) 실행 시
                 if 'BEGIN STATEMENT SET' in statement.upper():
-                    logger.info("실시간 스트리밍 Job 시작됨!")
-                    logger.info("Kafka -> RDS 실시간 전송 활성화")
-                    logger.info("이 Job은 수동으로 중지할 때까지 계속 실행됩니다")
+                    logger.info("✅ 실시간 스트리밍 Job 시작됨!")
+                    logger.info("📊 Kafka -> RDS 실시간 전송 활성화")
+                    logger.info(f"🔑 Session: {session_handle}")
+                    logger.info(f"⚙️ Operation: {operation_handle}")
                     
-                    # 3. 세션은 닫지 않음! (세션을 닫으면 스트리밍 Job도 취소됨)
-                    logger.info(f"세션 유지 중: {session_handle}")
-                    logger.info("세션을 열어둬야 스트리밍 Job이 계속 실행됩니다")
-                    logger.info("Job을 중지하려면 Flink UI에서 수동으로 취소하세요")
+                    # 3. Job 상태 모니터링 (1년간 계속 실행)
+                    logger.info("⏰ 스트리밍 Job 모니터링 시작 (365일간 실행)")
+                    logger.info("🛑 Job을 중지하려면 Flink UI에서 수동으로 취소하세요")
+                    
+                    # Job이 계속 실행되도록 Task를 살려둠 (365일)
+                    sleep_duration = 365 * 24 * 60 * 60  # 1년
+                    logger.info(f"💤 {sleep_duration}초 동안 세션 유지...")
+                    
+                    try:
+                        time.sleep(sleep_duration)
+                    except Exception as e:
+                        logger.warning(f"⚠️ Sleep 중단됨: {str(e)}")
                     
                     return {
                         'status': 'streaming_started',
                         'operation_handle': operation_handle,
                         'session': session_handle,
-                        'message': 'Streaming job is running - session kept alive'
+                        'message': 'Streaming job ran for 1 year'
                     }
                 
             except Exception as e:
