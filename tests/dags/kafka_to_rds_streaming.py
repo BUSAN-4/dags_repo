@@ -82,8 +82,8 @@ def kafka_to_rds_streaming():
             
             current_statement += line + " "
             
-            # BEGIN STATEMENT SET 감지
-            if 'BEGIN STATEMENT SET' in line.upper():
+            # EXECUTE STATEMENT SET 또는 BEGIN STATEMENT SET 감지
+            if 'EXECUTE STATEMENT SET' in line.upper() or 'BEGIN STATEMENT SET' in line.upper():
                 in_statement_set = True
             
             # END 감지
@@ -119,7 +119,7 @@ def kafka_to_rds_streaming():
                 logger.info(f"[{idx+1}/{len(statements)}] 실행 성공: {operation_handle}")
                 
                 # STATEMENT SET (스트리밍 잡) 실행 시
-                if 'BEGIN STATEMENT SET' in statement.upper():
+                if 'EXECUTE STATEMENT SET' in statement.upper() or 'BEGIN STATEMENT SET' in statement.upper():
                     logger.info("✅ 실시간 스트리밍 Job 시작됨!")
                     logger.info("📊 Kafka -> RDS 실시간 전송 활성화")
                     logger.info(f"🔑 Session: {session_handle}")
