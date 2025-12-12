@@ -51,10 +51,15 @@ def kafka_to_rds_streaming():
         session_url = f"{FLINK_GATEWAY_URL}/v1/sessions"
         
         try:
-            session_response = requests.post(session_url, json={}, timeout=10)
+            session_response = requests.post(session_url, json={
+                "properties": {
+                    "sql-gateway.session.idle-timeout": "24h",
+                    "sql-gateway.session.check-interval": "1h"
+                }
+            }, timeout=10)
             session_response.raise_for_status()
             session_handle = session_response.json()['sessionHandle']
-            logger.info(f"세션 생성 성공: {session_handle}")
+            logger.info(f"세션 생성 성공 (24h timeout): {session_handle}")
         except Exception as e:
             logger.error(f"세션 생성 실패: {str(e)}")
             raise
