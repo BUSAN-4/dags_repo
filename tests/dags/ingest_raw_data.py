@@ -48,7 +48,7 @@ def ingest_raw_data():
         sql_file_path = "/opt/airflow/dags/repo/flink_sql/01_ingest_raw_data.sql"
         
         try:
-            with open(sql_file_path, 'r', encoding='utf-8') as f:
+            with open(sql_file_path, 'r', encoding='utf-8-sig') as f:  # BOM 자동 제거
                 sql_content = f.read()
             
             # 파라미터 주입
