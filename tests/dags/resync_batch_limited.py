@@ -57,11 +57,15 @@ def resync_batch_limited():
             with open(sql_file_path, 'r', encoding='utf-8-sig') as f:
                 sql_content = f.read()
             
-            # offset 파라미터 주입
-            sql_content = sql_content.replace(':offset', str(offset))
+            # offset 파라미터 주입 (Python에서 계산)
+            offset_start = offset
+            offset_end = offset + 5
+            
+            sql_content = sql_content.replace(':offset', str(offset_start))
+            sql_content = sql_content.replace(':offset_end', str(offset_end))
             
             logger.info(f"SQL 파일 읽기 성공: {sql_file_path}")
-            logger.info(f"처리 범위: 행 {offset}~{offset+4} (LIMIT 5 OFFSET {offset})")
+            logger.info(f"처리 범위: rn > {offset_start} AND rn <= {offset_end}")
             return sql_content
             
         except Exception as e:
