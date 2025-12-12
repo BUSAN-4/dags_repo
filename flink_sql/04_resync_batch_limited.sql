@@ -1,12 +1,9 @@
 -- ================================================
--- Flink SQL: 기존 데이터 재동기화 (1분 단위 + 5개씩)
+-- Flink SQL: 기존 RDS 데이터 재전송 (5개씩 순차)
 -- ================================================
--- 실행 모드: Batch
--- 용도: 기존 RDS 데이터를 시간 범위 + 개수 제한으로 Kafka에 전송
--- Airflow 파라미터: 
---   :start_time - 시작 시간 (1분 단위)
---   :end_time - 종료 시간 (1분 단위)
---   :offset - OFFSET 값 (0부터 시작, 5씩 증가)
+-- 실행 모드: Batch (Airflow 스케줄링)
+-- 용도: 기존 RDS 테이블의 데이터를 5개씩 순차적으로 Kafka로 재전송
+-- Airflow 파라미터: :offset (0, 5, 10, 15, 20, ...)
 -- ================================================
 
 SET 'execution.runtime-mode' = 'batch';
@@ -290,74 +287,56 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 );
 
 -- ================================================
--- 3. 데이터 적재 (시간 범위 1분 + 5개씩 제한)
+-- 3. 데이터 적재 (OFFSET을 사용해 5개씩 순차 전송)
 -- ================================================
--- Airflow에서 파라미터 주입:
---   :start_time = '2024-12-01 00:00:00'
---   :end_time   = '2024-12-01 00:01:00' (1분 단위)
---   :offset     = 0, 5, 10, 15, ... (5씩 증가)
+-- Airflow에서 :offset 파라미터 주입
+-- 예: :offset = 0, 5, 10, 15, 20, ...
 -- ================================================
 
--- 사용자 차량 정보 (updated_at 기준)
+-- 사용자 차량 정보
 INSERT INTO kafka_uservehicle 
-SELECT * FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY updated_at, car_id) as rn
-    FROM rds_uservehicle 
-    WHERE updated_at >= CAST(:start_time AS TIMESTAMP) 
-      AND updated_at < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_uservehicle 
+ORDER BY car_id
+LIMIT 5 OFFSET :offset;
 
--- 운행 세션 (updated_at 기준)
+-- 운행 세션
 INSERT INTO kafka_driving_session 
-SELECT session_id, car_id, start_time, end_time, created_at, updated_at FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY updated_at, session_id) as rn
-    FROM rds_driving_session 
-    WHERE updated_at >= CAST(:start_time AS TIMESTAMP) 
-      AND updated_at < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_driving_session 
+ORDER BY session_id
+LIMIT 5 OFFSET :offset;
 
--- 운행 세션 정보 (dt 기준)
+-- 운행 세션 정보
 INSERT INTO kafka_driving_session_info 
-SELECT info_id, session_id, dt, roadname, treveltime, `Hour` FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY dt, info_id) as rn
-    FROM rds_driving_session_info 
-    WHERE dt >= CAST(:start_time AS TIMESTAMP) 
-      AND dt < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_driving_session_info 
+ORDER BY info_id
+LIMIT 5 OFFSET :offset;
 
--- 졸음 운전 감지 (updated_at 기준)
+-- 졸음 운전 감지
 INSERT INTO kafka_drowsy_drive 
-SELECT drowsy_id, session_id, detected_lat, detected_lon, detected_at, duration_sec, gaze_closure, head_drop, yawn_flag, abnormal_flag, created_at, updated_at FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY updated_at, drowsy_id) as rn
-    FROM rds_drowsy_drive 
-    WHERE updated_at >= CAST(:start_time AS TIMESTAMP) 
-      AND updated_at < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_drowsy_drive 
+ORDER BY drowsy_id
+LIMIT 5 OFFSET :offset;
 
--- 체납 차량 탐지 (detected_time 기준)
+-- 체납 차량 탐지
 INSERT INTO kafka_arrears_detection 
-SELECT detection_id, image_id, car_plate_number, detection_success, detected_lat, detected_lon, detected_time FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY detected_time, detection_id) as rn
-    FROM rds_arrears_detection 
-    WHERE detected_time >= CAST(:start_time AS TIMESTAMP) 
-      AND detected_time < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_arrears_detection 
+ORDER BY detection_id
+LIMIT 5 OFFSET :offset;
 
--- 체납 차량 정보 (updated_at 기준)
+-- 체납 차량 정보
 INSERT INTO kafka_arrears_info 
-SELECT car_plate_number, arrears_user_id, total_arrears_amount, arrears_period, notice_sent, updated_at, notice_count FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY updated_at, car_plate_number) as rn
-    FROM rds_arrears_info 
-    WHERE updated_at >= CAST(:start_time AS TIMESTAMP) 
-      AND updated_at < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_arrears_info 
+ORDER BY car_plate_number
+LIMIT 5 OFFSET :offset;
 
--- 실종자 탐지 (detected_time 기준)
+-- 실종자 탐지
 INSERT INTO kafka_missing_person_detection 
-SELECT detection_id, image_id, missing_id, detection_success, detected_lat, detected_lon, detected_time FROM (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY detected_time, detection_id) as rn
-    FROM rds_missing_person_detection 
-    WHERE detected_time >= CAST(:start_time AS TIMESTAMP) 
-      AND detected_time < CAST(:end_time AS TIMESTAMP)
-) WHERE rn > :offset AND rn <= (:offset + 5);
+SELECT * FROM rds_missing_person_detection 
+ORDER BY detection_id
+LIMIT 5 OFFSET :offset;
+
+
+
+
+
 
