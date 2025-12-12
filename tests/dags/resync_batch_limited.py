@@ -1,4 +1,5 @@
 from airflow.decorators import dag, task
+from airflow.models import Variable
 from datetime import datetime, timedelta
 import requests
 import logging
@@ -30,21 +31,22 @@ def resync_batch_limited():
     @task
     def calculate_offset(**context):
         """
-        DAG Run 시간 기반으로 offset 계산
-        매분 실행되므로 시간을 기준으로 offset 계산
+        Airflow Variable 기반 offset 계산
+        매 실행마다 +5씩 증가
         """
-        execution_date = context.get('logical_date')
+        # Variable에서 현재 offset 가져오기 (없으면 0부터 시작)
+        try:
+            current_offset = int(Variable.get('resync_batch_offset', default_var='0'))
+        except:
+            current_offset = 0
+            Variable.set('resync_batch_offset', '0')
         
-        # 시작 시간부터 현재까지 몇 분 경과했는지 계산
-        start_date = datetime(2025, 12, 12, tzinfo=KST)
-        minutes_elapsed = int((execution_date - start_date).total_seconds() / 60)
+        logger.info(f"📊 현재 offset: {current_offset} (행 {current_offset+1}~{current_offset+5})")
         
-        # offset = 분 경과 * 5
-        current_offset = minutes_elapsed * 5
-        
-        logger.info(f"📊 실행 시간: {execution_date}")
-        logger.info(f"📊 경과 시간: {minutes_elapsed}분")
-        logger.info(f"📊 현재 offset: {current_offset} (행 {current_offset}~{current_offset+4})")
+        # 다음 실행을 위해 offset 증가
+        next_offset = current_offset + 5
+        Variable.set('resync_batch_offset', str(next_offset))
+        logger.info(f"➡️ 다음 offset: {next_offset} (Variable에 저장)")
         
         return current_offset
     
