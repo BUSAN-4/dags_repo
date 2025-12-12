@@ -51,7 +51,7 @@ def resync_batch_limited():
     @task
     def read_sql_file(offset: int):
         """Flink SQL 파일 읽기 및 offset 파라미터 주입"""
-        sql_file_path = "/opt/airflow/dags/repo/flink_sql/flink_sql/04_resync_batch_limited.sql"
+        sql_file_path = "/opt/airflow/dags/repo/flink_sql/04_resync_batch_limited.sql"
         
         try:
             with open(sql_file_path, 'r', encoding='utf-8-sig') as f:
