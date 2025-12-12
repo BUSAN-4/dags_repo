@@ -16,6 +16,7 @@ SET 'state.backend' = 'rocksdb';
 -- Kafka 소스 테이블 정의 (실시간 읽기)
 -- ================================================
 
+-- 사용자-차량 정보
 CREATE TABLE kafka_uservehicle (
     car_id VARCHAR(255),
     age INT,
@@ -28,8 +29,7 @@ CREATE TABLE kafka_uservehicle (
     user_car_weight INT,
     user_car_displace INT,
     user_car_efficiency VARCHAR(255),
-    updated_at TIMESTAMP(3),
-    PRIMARY KEY (car_id) NOT ENFORCED
+    updated_at TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'uservehicle',
@@ -39,14 +39,14 @@ CREATE TABLE kafka_uservehicle (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 운행 세션
 CREATE TABLE kafka_driving_session (
     session_id VARCHAR(255),
     car_id VARCHAR(255),
     start_time TIMESTAMP(3),
     end_time TIMESTAMP(3),
     created_at TIMESTAMP(3),
-    updated_at TIMESTAMP(3),
-    PRIMARY KEY (session_id) NOT ENFORCED
+    updated_at TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'driving_session',
@@ -56,6 +56,7 @@ CREATE TABLE kafka_driving_session (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 운행 상세 정보
 CREATE TABLE kafka_driving_session_info (
     info_id VARCHAR(36),
     session_id VARCHAR(255),
@@ -93,8 +94,7 @@ CREATE TABLE kafka_driving_session_info (
     dt TIMESTAMP(3),
     roadname VARCHAR(50),
     treveltime DOUBLE,
-    Hour INT,
-    PRIMARY KEY (info_id) NOT ENFORCED
+    `Hour` INT
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'driving_session_info',
@@ -104,6 +104,7 @@ CREATE TABLE kafka_driving_session_info (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 졸음 운전 감지
 CREATE TABLE kafka_drowsy_drive (
     drowsy_id VARCHAR(64),
     session_id VARCHAR(64),
@@ -116,8 +117,7 @@ CREATE TABLE kafka_drowsy_drive (
     yawn_flag INT,
     abnormal_flag INT,
     created_at TIMESTAMP(3),
-    updated_at TIMESTAMP(3),
-    PRIMARY KEY (drowsy_id) NOT ENFORCED
+    updated_at TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'drowsy_drive',
@@ -127,6 +127,7 @@ CREATE TABLE kafka_drowsy_drive (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 체납 차량 감지
 CREATE TABLE kafka_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -134,8 +135,7 @@ CREATE TABLE kafka_arrears_detection (
     detection_success TINYINT,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
-    detected_time TIMESTAMP(3),
-    PRIMARY KEY (detection_id) NOT ENFORCED
+    detected_time TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'arrears_detection',
@@ -145,6 +145,7 @@ CREATE TABLE kafka_arrears_detection (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 실종자 차량 감지
 CREATE TABLE kafka_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -152,8 +153,7 @@ CREATE TABLE kafka_missing_person_detection (
     detection_success TINYINT,
     detected_lat DOUBLE,
     detected_lon DOUBLE,
-    detected_time TIMESTAMP(3),
-    PRIMARY KEY (detection_id) NOT ENFORCED
+    detected_time TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'missing_person_detection',
@@ -163,6 +163,7 @@ CREATE TABLE kafka_missing_person_detection (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 체납 차량 정보
 CREATE TABLE kafka_arrears_info (
     car_plate_number VARCHAR(20),
     arrears_user_id VARCHAR(64),
@@ -170,8 +171,7 @@ CREATE TABLE kafka_arrears_info (
     arrears_period VARCHAR(50),
     notice_sent TINYINT,
     notice_count TINYINT,
-    updated_at TIMESTAMP(3),
-    PRIMARY KEY (car_plate_number) NOT ENFORCED
+    updated_at TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'arrears_info',
@@ -181,6 +181,7 @@ CREATE TABLE kafka_arrears_info (
     'json.timestamp-format.standard' = 'ISO-8601'
 );
 
+-- 실종자 정보
 CREATE TABLE kafka_missing_person_info (
     missing_id VARCHAR(64),
     missing_name VARCHAR(100),
@@ -188,8 +189,7 @@ CREATE TABLE kafka_missing_person_info (
     missing_identity VARCHAR(255),
     registered_at TIMESTAMP(3),
     updated_at TIMESTAMP(3),
-    missing_location VARCHAR(50),
-    PRIMARY KEY (missing_id) NOT ENFORCED
+    missing_location VARCHAR(50)
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'missing_person_info',
@@ -203,6 +203,7 @@ CREATE TABLE kafka_missing_person_info (
 -- RDS 싱크 테이블 정의 (실시간 쓰기)
 -- ================================================
 
+-- 사용자-차량 정보
 CREATE TABLE rds_uservehicle (
     car_id VARCHAR(255),
     age INT,
@@ -228,6 +229,7 @@ CREATE TABLE rds_uservehicle (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 운행 세션
 CREATE TABLE rds_driving_session (
     session_id VARCHAR(255),
     car_id VARCHAR(255),
@@ -247,6 +249,7 @@ CREATE TABLE rds_driving_session (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 운행 상세 정보
 CREATE TABLE rds_driving_session_info (
     info_id VARCHAR(36),
     session_id VARCHAR(255),
@@ -284,7 +287,7 @@ CREATE TABLE rds_driving_session_info (
     dt TIMESTAMP(3),
     roadname VARCHAR(50),
     treveltime DOUBLE,
-    Hour INT,
+    `Hour` INT,
     PRIMARY KEY (info_id) NOT ENFORCED
 ) WITH (
     'connector' = 'jdbc',
@@ -297,6 +300,7 @@ CREATE TABLE rds_driving_session_info (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 졸음 운전 감지
 CREATE TABLE rds_drowsy_drive (
     drowsy_id VARCHAR(64),
     session_id VARCHAR(64),
@@ -322,6 +326,7 @@ CREATE TABLE rds_drowsy_drive (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 체납 차량 감지
 CREATE TABLE rds_arrears_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -342,6 +347,7 @@ CREATE TABLE rds_arrears_detection (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 실종자 차량 감지
 CREATE TABLE rds_missing_person_detection (
     detection_id VARCHAR(64),
     image_id VARCHAR(64),
@@ -362,6 +368,7 @@ CREATE TABLE rds_missing_person_detection (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 체납 차량 정보
 CREATE TABLE rds_arrears_info (
     car_plate_number VARCHAR(20),
     arrears_user_id VARCHAR(64),
@@ -382,6 +389,7 @@ CREATE TABLE rds_arrears_info (
     'sink.buffer-flush.interval' = '1s'
 );
 
+-- 실종자 정보
 CREATE TABLE rds_missing_person_info (
     missing_id VARCHAR(64),
     missing_name VARCHAR(100),
@@ -443,4 +451,3 @@ INSERT INTO rds_missing_person_info
 SELECT * FROM kafka_missing_person_info;
 
 END;
-

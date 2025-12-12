@@ -11,7 +11,7 @@ FLINK_GATEWAY_URL = "http://sql-gateway-service-20.flink.svc.cluster.local:8083"
 
 @dag(
     dag_id='ingest_raw_data',
-    description='RDS에서 Kafka로 실시간 데이터 적재 (1분마다)',
+    description='RDS에서 Kafka로 실시간 데이터 적재 (7개 테이블, 1분마다)',
     schedule='*/1 * * * *',
     start_date=datetime(2025, 1, 1, tzinfo=KST),
     catchup=False,
@@ -110,7 +110,7 @@ def ingest_raw_data():
                 statements.append(current_statement.strip())
                 current_statement = ""
         
-        logger.info(f"총 {len(statements)}개 SQL 구문 실행 예정")
+        logger.info(f"총 {len(statements)}개 SQL 구문 실행 예정 (예상: 23개 = SET 2개 + CREATE TABLE 14개 + INSERT 7개)")
         
         # 각 구문 실행
         for idx, statement in enumerate(statements):
