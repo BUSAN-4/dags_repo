@@ -1,6 +1,6 @@
 """
-Airflow DAG: 기존 데이터 재동기화 (1분 단위 + 5개씩)
-- 각 1분 시간 범위에 대해 5개씩 배치로 RDS -> Kafka 전송
+Airflow DAG: 기존 데이터 재동기화 (5개씩 배치)
+- 전체 시간 범위에서 5개씩 순차적으로 RDS -> Kafka 전송
 """
 from datetime import datetime, timedelta
 from airflow import DAG
@@ -26,7 +26,7 @@ SQL_FILE_PATH = "/opt/airflow/dags/flink_sql/04_resync_batch_limited.sql"
 with DAG(
     'resync_batch_limited',
     default_args=default_args,
-    description='기존 데이터 재동기화 (1분 단위 + 5개씩)',
+    description='기존 데이터 재동기화 (5개씩 배치)',
     schedule=None,  # 수동 실행
     start_date=datetime(2024, 1, 1),
     catchup=False,
@@ -44,45 +44,31 @@ with DAG(
     @task
     def calculate_batches(**context):
         """
-        처리할 시간 범위 및 배치 개수 계산
-        - 1분 단위 시간 범위
-        - 각 시간 범위마다 offset을 5씩 증가시키며 처리
+        처리할 배치 개수 계산
+        - 시간 범위는 고정 (start_time ~ end_time)
+        - offset만 5씩 증가시키며 5개씩 처리
         """
         # DAG Run Conf에서 파라미터 가져오기
         conf = context['dag_run'].conf or {}
-        start_time_str = conf.get('start_time', '2024-12-01 00:00:00')
-        end_time_str = conf.get('end_time', '2024-12-01 00:01:00')
-        max_batches_per_minute = conf.get('max_batches_per_minute', 20)  # 최대 100개(5*20)
+        start_time = conf.get('start_time', '2024-12-01 00:00:00')
+        end_time = conf.get('end_time', '2024-12-12 00:00:00')
+        max_batches = conf.get('max_batches', 100)  # 기본 100개 배치 (총 500개 행)
         
-        logging.info(f"📅 시간 범위: {start_time_str} ~ {end_time_str}")
-        logging.info(f"📦 최대 배치 수 (1분당): {max_batches_per_minute}")
+        logging.info(f"📅 시간 범위: {start_time} ~ {end_time} (고정)")
+        logging.info(f"📦 총 배치 수: {max_batches} (총 {max_batches * 5}개 행)")
         
-        # 1분 단위로 나눔
-        start_dt = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M:%S')
-        end_dt = datetime.strptime(end_time_str, '%Y-%m-%d %H:%M:%S')
+        batches = []
+        for batch_idx in range(max_batches):
+            offset = batch_idx * 5
+            batches.append({
+                'start_time': start_time,  # 항상 동일
+                'end_time': end_time,      # 항상 동일
+                'offset': offset,          # 0, 5, 10, 15, 20, ...
+                'batch_name': f"batch_{batch_idx:04d}_offset_{offset}"
+            })
         
-        time_ranges = []
-        current_time = start_dt
-        
-        while current_time < end_dt:
-            next_time = current_time + timedelta(minutes=1)
-            if next_time > end_dt:
-                next_time = end_dt
-            
-            # 각 1분 범위마다 offset을 0, 5, 10, ..., (max_batches_per_minute-1)*5 까지
-            for batch_idx in range(max_batches_per_minute):
-                offset = batch_idx * 5
-                time_ranges.append({
-                    'start_time': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'end_time': next_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'offset': offset,
-                    'batch_name': f"{current_time.strftime('%Y%m%d_%H%M')}_offset_{offset}"
-                })
-            
-            current_time = next_time
-        
-        logging.info(f"✅ 총 {len(time_ranges)}개 배치 생성")
-        return time_ranges
+        logging.info(f"✅ 총 {len(batches)}개 배치 생성")
+        return batches
 
     @task
     def submit_batch_job(sql_content: str, batch_info: dict):
