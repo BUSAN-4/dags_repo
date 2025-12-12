@@ -170,7 +170,7 @@ CREATE TABLE kafka_arrears_info (
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
     notice_sent BOOLEAN,
-    notice_count BOOLEAN,
+    notice_count INT,
     updated_at TIMESTAMP(3)
 ) WITH (
     'connector' = 'kafka',

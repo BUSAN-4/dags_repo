@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS kafka_arrears_info (
     arrears_period VARCHAR(50),
     notice_sent BOOLEAN,
     updated_at TIMESTAMP(3),
-    notice_count BOOLEAN
+    notice_count INT
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'arrears_info',
@@ -342,7 +342,7 @@ SELECT
     arrears_period, 
     CAST(notice_sent AS BOOLEAN), 
     updated_at, 
-    CAST(notice_count AS BOOLEAN)
+    notice_count
 FROM (
     SELECT *, ROW_NUMBER() OVER (ORDER BY car_plate_number) as rn
     FROM rds_arrears_info
