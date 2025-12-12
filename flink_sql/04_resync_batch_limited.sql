@@ -295,45 +295,59 @@ CREATE TABLE IF NOT EXISTS kafka_missing_person_detection (
 
 -- 사용자 차량 정보
 INSERT INTO kafka_uservehicle 
-SELECT * FROM rds_uservehicle 
-ORDER BY car_id
-LIMIT 5 OFFSET :offset;
+SELECT car_id, age, user_sex, user_location, user_car_class, user_car_brand, user_car_year, user_car_model, user_car_weight, user_car_displace, user_car_efficiency, updated_at
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY car_id) as rn
+    FROM rds_uservehicle
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 -- 운행 세션
 INSERT INTO kafka_driving_session 
-SELECT * FROM rds_driving_session 
-ORDER BY session_id
-LIMIT 5 OFFSET :offset;
+SELECT session_id, car_id, start_time, end_time, created_at, updated_at
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY session_id) as rn
+    FROM rds_driving_session
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 -- 운행 세션 정보
 INSERT INTO kafka_driving_session_info 
-SELECT * FROM rds_driving_session_info 
-ORDER BY info_id
-LIMIT 5 OFFSET :offset;
+SELECT info_id, session_id, dt, roadname, treveltime, `Hour`
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY info_id) as rn
+    FROM rds_driving_session_info
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 -- 졸음 운전 감지
 INSERT INTO kafka_drowsy_drive 
-SELECT * FROM rds_drowsy_drive 
-ORDER BY drowsy_id
-LIMIT 5 OFFSET :offset;
+SELECT drowsy_id, session_id, detected_lat, detected_lon, detected_at, duration_sec, gaze_closure, head_drop, yawn_flag, abnormal_flag, created_at, updated_at
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY drowsy_id) as rn
+    FROM rds_drowsy_drive
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 -- 체납 차량 탐지
 INSERT INTO kafka_arrears_detection 
-SELECT * FROM rds_arrears_detection 
-ORDER BY detection_id
-LIMIT 5 OFFSET :offset;
+SELECT detection_id, image_id, car_plate_number, detection_success, detected_lat, detected_lon, detected_time
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY detection_id) as rn
+    FROM rds_arrears_detection
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 -- 체납 차량 정보
 INSERT INTO kafka_arrears_info 
-SELECT * FROM rds_arrears_info 
-ORDER BY car_plate_number
-LIMIT 5 OFFSET :offset;
+SELECT car_plate_number, arrears_user_id, total_arrears_amount, arrears_period, notice_sent, updated_at, notice_count
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY car_plate_number) as rn
+    FROM rds_arrears_info
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 -- 실종자 탐지
 INSERT INTO kafka_missing_person_detection 
-SELECT * FROM rds_missing_person_detection 
-ORDER BY detection_id
-LIMIT 5 OFFSET :offset;
+SELECT detection_id, image_id, missing_id, detection_success, detected_lat, detected_lon, detected_time
+FROM (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY detection_id) as rn
+    FROM rds_missing_person_detection
+) WHERE rn > :offset AND rn <= :offset + 5;
 
 
 
