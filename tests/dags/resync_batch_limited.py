@@ -21,7 +21,7 @@ default_args = {
 
 # Flink SQL Gateway 설정
 FLINK_SQL_GATEWAY_URL = "http://flink-sql-gateway-20.flink.svc.cluster.local:8083"
-SQL_FILE_PATH = "/opt/airflow/dags/repo/flink_sql/flink_sql/04_resync_batch_limited.sql"
+SQL_FILE_PATH = "/opt/airflow/dags/repo/flink_sql/04_resync_batch_limited.sql"
 
 with DAG(
     'resync_batch_limited',
