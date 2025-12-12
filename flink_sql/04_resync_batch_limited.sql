@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS rds_arrears_info (
     arrears_user_id VARCHAR(64),
     total_arrears_amount INT,
     arrears_period VARCHAR(50),
-    notice_sent TINYINT,
+    notice_sent BOOLEAN,
     updated_at TIMESTAMP(3),
     notice_count TINYINT,
     PRIMARY KEY (car_plate_number) NOT ENFORCED
@@ -340,7 +340,7 @@ SELECT
     arrears_user_id, 
     total_arrears_amount, 
     arrears_period, 
-    CAST(notice_sent AS BOOLEAN), 
+    notice_sent, 
     updated_at, 
     notice_count
 FROM (
